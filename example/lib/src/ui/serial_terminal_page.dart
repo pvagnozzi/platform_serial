@@ -14,11 +14,15 @@ class SerialTerminalPage extends StatefulWidget {
     this.controller,
     required this.onLocaleChanged,
     required this.currentLocale,
+    required this.onThemeModeChanged,
+    required this.currentThemeMode,
   });
 
   final SerialTerminalController? controller;
   final ValueChanged<Locale> onLocaleChanged;
   final Locale? currentLocale;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ThemeMode currentThemeMode;
 
   @override
   State<SerialTerminalPage> createState() => _SerialTerminalPageState();
@@ -172,6 +176,14 @@ class _SerialTerminalPageState extends State<SerialTerminalPage> {
     );
   }
 
+  IconData _getThemeIcon(ThemeMode mode) {
+    return switch (mode) {
+      ThemeMode.light => Icons.light_mode,
+      ThemeMode.dark => Icons.dark_mode,
+      ThemeMode.system => Icons.brightness_auto,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations t = AppLocalizations.of(context);
@@ -190,17 +202,68 @@ class _SerialTerminalPageState extends State<SerialTerminalPage> {
         appBar: AppBar(
           title: Text(t.appTitle),
           actions: <Widget>[
+            PopupMenuButton<ThemeMode>(
+              tooltip: 'Theme',
+              icon: Icon(_getThemeIcon(widget.currentThemeMode)),
+              onSelected: widget.onThemeModeChanged,
+              itemBuilder: (BuildContext context) {
+                return <PopupMenuEntry<ThemeMode>>[
+                  const PopupMenuItem<ThemeMode>(
+                    value: ThemeMode.light,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(Icons.light_mode),
+                        SizedBox(width: 12),
+                        Text('Light'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<ThemeMode>(
+                    value: ThemeMode.dark,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(Icons.dark_mode),
+                        SizedBox(width: 12),
+                        Text('Dark'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<ThemeMode>(
+                    value: ThemeMode.system,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(Icons.brightness_auto),
+                        SizedBox(width: 12),
+                        Text('System'),
+                      ],
+                    ),
+                  ),
+                ];
+              },
+            ),
             PopupMenuButton<Locale>(
               tooltip: t.chooseLanguage,
               icon: const Icon(Icons.language),
               onSelected: widget.onLocaleChanged,
               itemBuilder: (BuildContext context) {
                 return AppLocalizations.supportedLocales.map((Locale locale) {
+                  final String flag =
+                      AppLocalizations.localeFlags[locale.languageCode] ?? '';
+                  final String label =
+                      AppLocalizations.localeLabels[locale.languageCode] ??
+                          locale.languageCode;
                   return PopupMenuItem<Locale>(
                     value: locale,
-                    child: Text(
-                      AppLocalizations.localeLabels[locale.languageCode] ??
-                          locale.languageCode,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(flag),
+                        const SizedBox(width: 12),
+                        Text(label),
+                      ],
                     ),
                   );
                 }).toList(growable: false);

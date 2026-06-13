@@ -66,6 +66,8 @@ void main() {
           controller: controller,
           currentLocale: const Locale('it'),
           onLocaleChanged: (_) {},
+          onThemeModeChanged: (_) {},
+          currentThemeMode: ThemeMode.system,
         ),
       ),
     );

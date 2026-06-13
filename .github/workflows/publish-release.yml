@@ -1,0 +1,95 @@
+name: Publish Release to pub.dev
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pubspec.yaml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (optional, auto-detect if empty)'
+        required: false
+
+jobs:
+  publish:
+    name: Publish to pub.dev
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.10.0
+          channel: stable
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test test/unit/ test/integration/
+
+      - name: Setup pub.dev credentials
+        run: |
+          mkdir -p ~/.pub-cache
+          echo "${{ secrets.PUB_DEV_TOKEN }}" > ~/.pub-cache/credentials.json
+
+      - name: Get version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep "^version:" pubspec.yaml | head -n 1 | cut -d' ' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION"
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          release_name: Release v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: Publish to pub.dev
+        run: flutter pub publish --force
+        env:
+          PUB_ENVIRONMENT: "ci.github"
+          PUB_DEV_TOKEN: ${{ secrets.PUB_DEV_TOKEN }}
+
+      - name: Comment on related PR
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ **Release Published!**\n\nVersion \`${version}\` has been successfully published to [pub.dev](https://pub.dev/packages/platform_serial).`
+            });
+
+      - name: Failure notification
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **Release Failed**\n\nFailed to publish version \`${version}\` to pub.dev. Check the workflow logs for details.`
+            });

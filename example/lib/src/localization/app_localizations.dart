@@ -46,6 +46,24 @@ class AppLocalizations {
     'ko': '한국어',
   };
 
+  static const Map<String, String> localeFlags = <String, String>{
+    'en': '🇬🇧',
+    'fr': '🇫🇷',
+    'pt': '🇵🇹',
+    'es': '🇪🇸',
+    'it': '🇮🇹',
+    'de': '🇩🇪',
+    'nl': '🇳🇱',
+    'ru': '🇷🇺',
+    'el': '🇬🇷',
+    'tr': '🇹🇷',
+    'ar': '🇸🇦',
+    'he': '🇮🇱',
+    'zh': '🇨🇳',
+    'ja': '🇯🇵',
+    'ko': '🇰🇷',
+  };
+
   static const Set<String> _rtlLanguages = <String>{'ar', 'he'};
 
   bool get isRtl => _rtlLanguages.contains(locale.languageCode);

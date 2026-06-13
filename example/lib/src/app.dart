@@ -21,6 +21,7 @@ class _SerialTerminalAppState extends State<SerialTerminalApp> {
   Locale? _locale;
   bool _showSplash = true;
   Timer? _splashTimer;
+  ThemeMode _themeMode = ThemeMode.system;
 
   @override
   void initState() {
@@ -46,6 +47,12 @@ class _SerialTerminalAppState extends State<SerialTerminalApp> {
     });
   }
 
+  void _onThemeModeChanged(ThemeMode mode) {
+    setState(() {
+      _themeMode = mode;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -61,12 +68,14 @@ class _SerialTerminalAppState extends State<SerialTerminalApp> {
       ],
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: _themeMode,
       home: _showSplash
           ? const SplashScreen()
           : SerialTerminalPage(
               currentLocale: _locale,
               onLocaleChanged: _onLocaleChanged,
+              onThemeModeChanged: _onThemeModeChanged,
+              currentThemeMode: _themeMode,
             ),
     );
   }
