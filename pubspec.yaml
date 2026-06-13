@@ -1,0 +1,41 @@
+name: platform_serial
+description: >
+  Package Flutter plugin completo per la gestione delle porte seriali.
+  Supporta Windows, Linux, macOS, Android (OTG) e iOS (OTG) con un'interfaccia unificata.
+  Fornisce comunicazione sincrona e asincrona, supporto per dati binari e testuali,
+  e gestione degli errori comprehensiva.
+
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.1.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  mockito: ^5.4.0
+  mocktail: ^1.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.xauron.platform_serial
+        pluginClass: FlutterSerialPlugin
+      ios:
+        pluginClass: FlutterSerialPlugin
+      linux:
+        pluginClass: FlutterSerialPlugin
+        ffiPlugin: true
+      macos:
+        ffiPlugin: true
+      windows:
+        ffiPlugin: true
