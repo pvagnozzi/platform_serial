@@ -4,26 +4,20 @@ This document describes the setup required to enable the new CI/CD workflows and
 
 ## Required GitHub Secrets
 
-Configure the following secrets in your GitHub repository settings:
+**⚠️ UPDATED: Google OAuth Authentication**
 
-### Settings > Secrets and variables > Actions
+Previously used `PUB_DEV_TOKEN`, but we now use **Google Service Account authentication** for better security and control.
 
-#### 1. `PUB_DEV_TOKEN`
+See [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) for complete setup instructions.
 
-**Purpose**: Authenticate with pub.dev API to publish releases automatically.
+### Quick Reference: Secret Configuration
 
-**Steps**:
-1. Go to https://pub.dev/account
-2. Create an API token under "Account Settings"
-3. Copy the token value
-4. In GitHub:
-   - Navigate to Settings > Secrets and variables > Actions
-   - Click "New repository secret"
-   - Name: `PUB_DEV_TOKEN`
-   - Value: Paste the pub.dev API token
-   - Click "Add secret"
+In GitHub Settings > Secrets and variables > Actions, configure:
 
-**Note**: This token should be kept private and never committed to the repository.
+- **`GOOGLE_SERVICE_ACCOUNT_JSON`** (required)
+  - Value: Complete JSON file from Google Cloud Service Account
+  - Purpose: Authenticate with pub.dev using Google OAuth
+  - [Setup Instructions](./GOOGLE_OAUTH_SETUP.md)
 
 ## Workflows
 
@@ -47,20 +41,23 @@ Configure the following secrets in your GitHub repository settings:
 ### 2. Publish Release to pub.dev (`.github/workflows/publish-release.yml`)
 
 **Triggers**:
-- Push to `main` branch
+- Push to `main` branch (when `pubspec.yaml` is updated)
 - Manual trigger via GitHub UI with optional version input
 
 **Jobs**:
 - Validates that all tests pass
 - Extracts version from `pubspec.yaml`
+- Authenticates with Google Cloud using Service Account
 - Creates a GitHub Release with tag `v{version}`
-- Publishes to pub.dev using the API token
-- Comments on the PR/issue with status
+- Publishes to pub.dev using Google OAuth
+- Logs the results
 
 **Preconditions**:
-- `PUB_DEV_TOKEN` must be configured
+- `GOOGLE_SERVICE_ACCOUNT_JSON` must be configured
+- Service Account must have pub.dev publisher access
 - Version in `pubspec.yaml` must be updated before merging to main
 - All tests must pass
+- See [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) for complete setup
 
 ## Git Flow Integration
 
@@ -145,16 +142,31 @@ gitversion
 
 ## Next Steps
 
-1. ✅ Commit these files to the repository
-2. ✅ Configure `PUB_DEV_TOKEN` in GitHub Settings
-3. ✅ Create your first feature branch from `develop`
-4. ✅ Open a PR to `develop` to test the workflow
-5. ✅ Merge to `main` and watch the auto-publish workflow
+### Setup (Required Once)
+
+1. ✅ Read [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md)
+2. ✅ Create Google Cloud Project and Service Account
+3. ✅ Generate JSON credentials
+4. ✅ Configure `GOOGLE_SERVICE_ACCOUNT_JSON` in GitHub Secrets
+5. ✅ Associate Service Account with pub.dev publisher access
+
+### Release Workflow
+
+1. Update version in `pubspec.yaml`
+2. Commit and push to `develop`
+3. Create Pull Request to `main`
+   - `test-pr.yml` workflow runs automatically
+   - ✅ All checks must pass to merge
+4. Merge PR to `main`
+   - `publish-release.yml` workflow triggers automatically
+   - 📦 Package is published to pub.dev
+   - 🏷️ GitHub Release is created with tag `v{version}`
 
 ---
 
 For more details, see:
-- [docs/GITFLOW.md](../GITFLOW.md)
-- [GitVersion.yml](../GitVersion.yml)
-- [.github/workflows/test-pr.yml](../workflows/test-pr.yml)
-- [.github/workflows/publish-release.yml](../workflows/publish-release.yml)
+- [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) — Complete Google OAuth setup guide
+- [GITFLOW.md](./GITFLOW.md) — Git Flow branching model
+- [GitVersion.yml](../GitVersion.yml) — Semantic versioning config
+- [.github/workflows/test-pr.yml](../.github/workflows/test-pr.yml) — Test workflow
+- [.github/workflows/publish-release.yml](../.github/workflows/publish-release.yml) — Publish workflow

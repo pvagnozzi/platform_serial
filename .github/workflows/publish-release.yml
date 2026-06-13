@@ -19,6 +19,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -39,10 +40,41 @@ jobs:
       - name: Run tests
         run: flutter test test/unit/ test/integration/
 
-      - name: Setup pub.dev credentials
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Setup pub.dev credentials from Google OAuth
         run: |
           mkdir -p ~/.pub-cache
-          echo "${{ secrets.PUB_DEV_TOKEN }}" > ~/.pub-cache/credentials.json
+          
+          # Get OAuth2 access token from gcloud
+          ACCESS_TOKEN=$(gcloud auth application-default print-access-token)
+          
+          # Create pub.dev credentials.json with OAuth2 token
+          cat > ~/.pub-cache/credentials.json << EOF
+          {
+            "version": 1,
+            "hosted": [
+              {
+                "url": "https://pub.dev",
+                "credentialType": "oauth2",
+                "clientId": "818368855108-8grd2eg9tj9f4o01905ktndnj4kolaba.apps.googleusercontent.com",
+                "scopes": [
+                  "openid",
+                  "https://www.googleapis.com/auth/userinfo.email"
+                ],
+                "token": "$ACCESS_TOKEN"
+              }
+            ]
+          }
+          EOF
+          
+          chmod 600 ~/.pub-cache/credentials.json
 
       - name: Get version from pubspec.yaml
         id: version
@@ -63,10 +95,40 @@ jobs:
           prerelease: false
 
       - name: Publish to pub.dev
-        run: flutter pub publish --force
+        run: |
+          echo "Publishing platform_serial v${{ steps.version.outputs.version }} to pub.dev..."
+          flutter pub publish --force
         env:
           PUB_ENVIRONMENT: "ci.github"
-          PUB_DEV_TOKEN: ${{ secrets.PUB_DEV_TOKEN }}
+
+      - name: Comment on PR/Release with success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            const releaseUrl = 'https://pub.dev/packages/platform_serial/versions/' + version;
+            github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'publish-success',
+              client_payload: {
+                version: version,
+                url: releaseUrl
+              }
+            });
+            console.log(`✅ Published version ${version} to pub.dev`);
+            console.log(`📦 View at: ${releaseUrl}`);
+
+      - name: Comment on PR/Release with failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            console.error(`❌ Failed to publish version ${version} to pub.dev`);
+            console.error('Check workflow logs for details');
+
 
       - name: Comment on related PR
         if: success()
