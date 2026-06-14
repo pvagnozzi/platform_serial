@@ -1,0 +1,24 @@
+# Local development and agent runtime state
+.crew/
+.pi/
+.dart_tool/
+build/
+coverage/
+
+# IDE/editor state
+.idea/
+.vscode/
+
+# Generated example build outputs
+example/.dart_tool/
+example/build/
+example/.flutter-plugins
+example/.flutter-plugins-dependencies
+
+# Temporary logs and reports
+*.log
+*.tmp
+subagent-*.md
+example/linux/flutter/ephemeral/
+example/macos/Flutter/ephemeral/
+example/windows/flutter/ephemeral/

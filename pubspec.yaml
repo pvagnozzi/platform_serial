@@ -1,19 +1,15 @@
 name: platform_serial
-description: >
-  Complete Flutter plugin for managing serial ports.
-  Supports Windows, Linux, macOS, Android (OTG), and iOS (OTG) with a unified interface.
-  Provides synchronous and asynchronous communication, support for both binary and textual data, and comprehensive error handling.
+description: Cross-platform Flutter serial port plugin with streams, typed errors, native backends, and modem-control signals.
 
-
-version: 0.1.1
+version: 0.1.2
 homepage: https://github.com/pvagnozzi/platform_serial
 repository: https://github.com/pvagnozzi/platform_serial
 issue_tracker: https://github.com/pvagnozzi/platform_serial/issues
-documentation: https://github.com/pvagnozzi/platform_serial/tree/main/doc
+documentation: https://github.com/pvagnozzi/platform_serial/tree/dev/doc
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: '>=3.10.0'
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
 
 dependencies:
   flutter:
@@ -23,7 +19,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
   mockito: ^5.4.0
   mocktail: ^1.0.0
 
