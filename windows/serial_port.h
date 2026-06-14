@@ -46,6 +46,7 @@ class SerialPort final {
   bool BytesAvailable(int32_t* bytes_available, WindowsError* error);
   bool Flush(WindowsError* error);
   bool ResetBuffers(WindowsError* error);
+  bool GetControlSignals(uint32_t* signal_mask, WindowsError* error);
   bool SetDtr(bool enabled, WindowsError* error);
   bool SetRts(bool enabled, WindowsError* error);
   bool IsOpen() const;
@@ -62,6 +63,8 @@ class SerialPort final {
   std::wstring port_name_;
   HANDLE handle_ = INVALID_HANDLE_VALUE;
   SerialPortConfig config_;
+  bool dtr_enabled_ = false;
+  bool rts_enabled_ = false;
   mutable std::mutex mutex_;
 };
 

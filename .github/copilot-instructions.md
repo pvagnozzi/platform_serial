@@ -6,8 +6,9 @@ Run commands from the repository root.
 
 ```bash
 flutter pub get
-flutter analyze
-flutter test
+flutter analyze --fatal-infos --fatal-warnings
+flutter test --coverage
+dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100
 ```
 
 Targeted tests:
@@ -20,7 +21,7 @@ flutter test test/unit/serial_port_test.dart
 flutter test test/unit/serial_port_test.dart --plain-name "reads data synchronously"
 ```
 
-Platform builds (documented in `docs/INDEX.md`):
+Platform builds (documented in `doc/INDEX.md`):
 
 ```bash
 flutter build windows --verbose
@@ -82,5 +83,7 @@ flutter build ios --debug
 - Agents: `.github/agents/*.agent.md`
 - Skills: `.github/skills/*/SKILL.md`
 - MCP config: `.github/mcp-config.json`
-- Hooks config: `hooks.json` and `.github/hooks/**`
 - Collections manifest: `.github/collections/awesome-copilot-mobile-stack.json`
+- Repository agent contract: `AGENTS.md`
+- Release manager agent: `.github/agents/release-manager.agent.md`
+- Quality gate skill: `.github/skills/platform-serial-quality-gate/SKILL.md`

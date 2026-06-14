@@ -48,6 +48,9 @@ class SerialPortManager final {
                       WindowsError* error);
   bool FlushPort(int64_t port_id, WindowsError* error);
   bool ResetPortBuffers(int64_t port_id, WindowsError* error);
+  bool GetControlSignals(int64_t port_id,
+                         uint32_t* signal_mask,
+                         WindowsError* error);
   bool SetDtr(int64_t port_id, bool enabled, WindowsError* error);
   bool SetRts(int64_t port_id, bool enabled, WindowsError* error);
 

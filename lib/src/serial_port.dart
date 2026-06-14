@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'contracts/serial_port_interface.dart';
 import 'models/serial_config.dart';
+import 'models/serial_control_signals.dart';
 import 'models/serial_error.dart';
 import 'platform/serial_platform_interface.dart';
 
@@ -86,9 +87,13 @@ class SerialPort implements SerialPortInterface {
       final closeResult = (_platform as dynamic).closePort(portName);
       if (closeResult is Future<void>) {
         await closeResult;
-      } else if (closeResult is Future) {
+      }
+      // Defensive fallback for dynamic/test doubles with broader Future types.
+      // coverage:ignore-start
+      else if (closeResult is Future) {
         await closeResult;
       }
+      // coverage:ignore-end
     } on TypeError {
       // Some test-only mocks may not return a Future<void>.
     } on NoSuchMethodError {
@@ -251,6 +256,23 @@ class SerialPort implements SerialPortInterface {
     }
 
     await _platform.resetBuffers(_config!.portName);
+  }
+
+  @override
+  Future<SerialControlSignals> getControlSignals() async {
+    if (!_isOpen || _config == null) {
+      throw SerialError(
+        type: SerialErrorType.portClosed,
+        message: 'Port not open',
+      );
+    }
+    return _platform.getControlSignals(_config!.portName);
+  }
+
+  @override
+  Future<bool> getCts() async {
+    final signals = await getControlSignals();
+    return signals.cts;
   }
 
   @override

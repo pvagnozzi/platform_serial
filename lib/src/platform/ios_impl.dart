@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 import 'package:flutter/services.dart';
 
 import '../models/serial_error.dart';

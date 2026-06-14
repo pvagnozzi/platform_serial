@@ -5,7 +5,7 @@ description: >
   Provides synchronous and asynchronous communication, support for both binary and textual data, and comprehensive error handling.
 
 
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/pvagnozzi/platform_serial
 repository: https://github.com/pvagnozzi/platform_serial
 issue_tracker: https://github.com/pvagnozzi/platform_serial/issues
@@ -36,7 +36,7 @@ flutter:
       ios:
         pluginClass: FlutterSerialPlugin
       linux:
-        pluginClass: FlutterSerialPlugin
+        pluginClass: PlatformSerialPlugin
         ffiPlugin: true
       macos:
         ffiPlugin: true

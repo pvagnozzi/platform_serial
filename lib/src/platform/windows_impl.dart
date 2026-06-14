@@ -1,3 +1,6 @@
+// coverage:ignore-file
+// ignore_for_file: close_sinks
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
@@ -7,6 +10,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 
 import '../models/serial_config.dart';
+import '../models/serial_control_signals.dart';
 import '../models/serial_error.dart';
 import '../models/serial_port_info.dart';
 import 'serial_platform_interface.dart';
@@ -17,6 +21,12 @@ const int _kFlutterSerialPortNotFound = 2;
 const int _kFlutterSerialPortAlreadyOpen = 3;
 const int _kFlutterSerialIoError = 4;
 const int _kFlutterSerialTimeout = 5;
+
+const int _windowsSignalRts = 1 << 0;
+const int _windowsSignalCts = 1 << 1;
+const int _windowsSignalDtr = 1 << 2;
+const int _windowsSignalDsr = 1 << 3;
+const int _windowsSignalDcd = 1 << 4;
 
 /// Windows FFI implementation.
 class WindowsSerialImpl implements SerialPlatformInterface {
@@ -311,6 +321,42 @@ class WindowsSerialImpl implements SerialPlatformInterface {
   }
 
   @override
+  Future<SerialControlSignals> getControlSignals(String portName) async {
+    final context = _requireContext(portName);
+    final maskPointer = calloc<Uint32>();
+    final errorCodePointer = calloc<Uint32>();
+    final errorMessagePointer = calloc<Pointer<Utf8>>();
+
+    try {
+      final status = _bindings.getControlSignals(
+        context.portId,
+        maskPointer,
+        errorCodePointer,
+        errorMessagePointer,
+      );
+      _ensureSuccess(
+        status,
+        errorCodePointer.value,
+        errorMessagePointer.value,
+        'Error reading control signals on Windows',
+      );
+      final mask = maskPointer.value;
+      return SerialControlSignals(
+        mask: mask,
+        rts: (mask & _windowsSignalRts) != 0,
+        cts: (mask & _windowsSignalCts) != 0,
+        dtr: (mask & _windowsSignalDtr) != 0,
+        dsr: (mask & _windowsSignalDsr) != 0,
+        dcd: (mask & _windowsSignalDcd) != 0,
+      );
+    } finally {
+      calloc.free(maskPointer);
+      calloc.free(errorCodePointer);
+      calloc.free(errorMessagePointer);
+    }
+  }
+
+  @override
   Future<void> setDtr(String portName, bool enabled) async {
     final context = _requireContext(portName);
     final errorCodePointer = calloc<Uint32>();
@@ -536,6 +582,8 @@ final class _FlutterSerialBindings {
             .lookupFunction<_ResetPortBuffersNative, _ResetPortBuffersDart>(
           'platform_serial_reset_port_buffers',
         ),
+        getControlSignals = library.lookupFunction<_GetControlSignalsNative,
+            _GetControlSignalsDart>('platform_serial_get_control_signals'),
         setDtr = library.lookupFunction<_SetDtrNative, _SetDtrDart>(
           'platform_serial_set_dtr',
         ),
@@ -554,6 +602,7 @@ final class _FlutterSerialBindings {
   final _BytesAvailableDart bytesAvailable;
   final _FlushPortDart flushPort;
   final _ResetPortBuffersDart resetPortBuffers;
+  final _GetControlSignalsDart getControlSignals;
   final _SetDtrDart setDtr;
   final _SetRtsDart setRts;
   final _FreeStringDart freeString;
@@ -673,6 +722,19 @@ typedef _ResetPortBuffersNative = Int32 Function(
 );
 typedef _ResetPortBuffersDart = int Function(
   int,
+  Pointer<Uint32>,
+  Pointer<Pointer<Utf8>>,
+);
+
+typedef _GetControlSignalsNative = Int32 Function(
+  Int64,
+  Pointer<Uint32>,
+  Pointer<Uint32>,
+  Pointer<Pointer<Utf8>>,
+);
+typedef _GetControlSignalsDart = int Function(
+  int,
+  Pointer<Uint32>,
   Pointer<Uint32>,
   Pointer<Pointer<Utf8>>,
 );

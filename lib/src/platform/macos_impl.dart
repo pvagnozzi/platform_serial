@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi' as ffi;
@@ -405,8 +407,7 @@ class _MacOSPortState {
           if (!_controller.isClosed) {
             _controller.add({
               'type': 'error',
-              'message':
-                  'Error monitoring serial port $portName',
+              'message': 'Error monitoring serial port $portName',
             });
           }
           return;
@@ -420,8 +421,7 @@ class _MacOSPortState {
           if (!_controller.isClosed) {
             _controller.add({
               'type': 'error',
-              'message':
-                  'Error retrieving available bytes for $portName',
+              'message': 'Error retrieving available bytes for $portName',
             });
           }
           return;

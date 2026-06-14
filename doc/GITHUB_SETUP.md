@@ -1,172 +1,86 @@
 # GitHub Setup Guide
 
-This document describes the setup required to enable the new CI/CD workflows and automatic publishing.
+This guide describes the repository settings that cannot be fully enforced by files committed to the repository.
 
-## Required GitHub Secrets
+## 1. Apply branch protection / rulesets
 
-**⚠️ UPDATED: Google OAuth Authentication**
+Apply `.github/rulesets/gitflow-branch-protection.json` to protect `main`, `develop`, and `dev`.
 
-Previously used `PUB_DEV_TOKEN`, but we now use **Google Service Account authentication** for better security and control.
+Recommended GitHub UI path:
 
-See [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) for complete setup instructions.
+1. Open **Settings → Rules → Rulesets**.
+2. Create a new branch ruleset or import the JSON policy.
+3. Target `main`, `develop`, and `dev`.
+4. Enable:
+   - pull request required;
+   - one approval minimum;
+   - CODEOWNERS review;
+   - stale review dismissal;
+   - required status check `PR Status Check`;
+   - block force pushes and deletion.
 
-### Quick Reference: Secret Configuration
-
-In GitHub Settings > Secrets and variables > Actions, configure:
-
-- **`GOOGLE_SERVICE_ACCOUNT_JSON`** (required)
-  - Value: Complete JSON file from Google Cloud Service Account
-  - Purpose: Authenticate with pub.dev using Google OAuth
-  - [Setup Instructions](./GOOGLE_OAUTH_SETUP.md)
-
-## Workflows
-
-### 1. Test on PR (`.github/workflows/test-pr.yml`)
-
-**Triggers**:
-- Pull requests to `main` or `develop`
-- Pushes to `develop`
-- Manual trigger via GitHub UI
-
-**Jobs**:
-- **Analyze**: Runs `flutter analyze` to check for issues
-- **Test**: Runs unit, integration, and E2E tests
-- **Build Example**: Builds the example app for web
-- **PR Status**: Aggregates results and marks PR as passed/failed
-
-**Status Checks**:
-- ✅ All jobs must pass to merge PR
-- 🟡 Example build failure is non-blocking (warning only)
-
-### 2. Publish Release to pub.dev (`.github/workflows/publish-release.yml`)
-
-**Triggers**:
-- Push to `main` branch (when `pubspec.yaml` is updated)
-- Manual trigger via GitHub UI with optional version input
-
-**Jobs**:
-- Validates that all tests pass
-- Extracts version from `pubspec.yaml`
-- Authenticates with Google Cloud using Service Account
-- Creates a GitHub Release with tag `v{version}`
-- Publishes to pub.dev using Google OAuth
-- Logs the results
-
-**Preconditions**:
-- `GOOGLE_SERVICE_ACCOUNT_JSON` must be configured
-- Service Account must have pub.dev publisher access
-- Version in `pubspec.yaml` must be updated before merging to main
-- All tests must pass
-- See [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) for complete setup
-
-## Git Flow Integration
-
-The repository uses **Git Flow** with the following structure:
-
-```
-main                    (production releases)
- └─→ tag: v{version}
- └─→ trigger: publish-release.yml
-
-develop                 (integration branch)
- ├─→ feature/*          (new features)
- ├─→ release/*          (pre-release)
- └─→ hotfix/*           (critical fixes)
+```mermaid
+flowchart LR
+  Ruleset[GitHub Ruleset] --> Main[main]
+  Ruleset --> Develop[develop]
+  Ruleset --> Dev[dev]
+  Ruleset --> Required[PR Status Check]
+  Ruleset --> Owners[CODEOWNERS review]
 ```
 
-See `docs/GITFLOW.md` for detailed workflow documentation.
+## 2. Configure pub.dev trusted publishing
 
-## Version Management
+The release workflow uses OIDC trusted publishing instead of long-lived pub.dev or Google service-account JSON secrets.
 
-**GitVersion** is configured in `GitVersion.yml` to:
-- Automatically bump versions based on branch
-- Generate semantic version tags
-- Support pre-release versions (alpha, rc)
+In pub.dev package administration, configure a trusted publisher for:
 
-### Version Auto-Increment Rules
+| Field | Value |
+| --- | --- |
+| Repository | `pvagnozzi/platform_serial` |
+| Workflow | `.github/workflows/publish-release.yml` |
+| Environment | `pub-dev` |
+| Package | `platform_serial` |
 
-| Branch | Version Tag | Increment |
-|--------|------------|-----------|
-| `main` | v{version} | Patch |
-| `develop` | v{version}-alpha | Minor |
-| `feature/*` | v{version}-alpha.{branchname} | Minor |
-| `release/*` | v{version}-rc | Patch |
+In GitHub, create the environment **`pub-dev`** and require reviewer approval if desired.
 
-## Local Setup (Optional)
+## 3. Workflows
 
-To install and use GitVersion locally:
+| Workflow | Purpose |
+| --- | --- |
+| `.github/workflows/test-pr.yml` | Analyze root/example, run tests with coverage, enforce 100% LCOV line coverage, and validate pub metadata. |
+| `.github/workflows/publish-release.yml` | Publish to pub.dev after a PR is merged into `main`, then create tag and GitHub Release. |
+| `.github/workflows/gitflow-policy.yml` | Scheduled/manual audit that reports unprotected GitFlow branches. |
+
+## 4. Required secrets
+
+No secret is required for pub.dev publishing when trusted publishing is configured correctly.
+
+Optional secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `CODECOV_TOKEN` | Optional Codecov upload token for private repositories or stricter Codecov settings. |
+
+Do **not** add long-lived pub.dev tokens or Google service-account JSON keys for release publishing.
+
+## 5. Local setup
+
+Developers can bootstrap their machines with:
 
 ```bash
-# Using Homebrew (macOS/Linux)
-brew install gitversion
-
-# Using Chocolatey (Windows)
-choco install gitversion.portable
-
-# Using .NET
-dotnet tool install --global GitVersion.Tool
+scripts/linux/setup-devenv --yes
+scripts/macos/setup-devenv --yes
 ```
 
-View current version:
-```bash
-gitversion
+```powershell
+scripts/windows/setup-devenv.ps1 -Yes
 ```
 
-## Troubleshooting
+## 6. Release checklist
 
-### Workflow fails with "PUB_DEV_TOKEN not found"
-
-**Solution**: Ensure `PUB_DEV_TOKEN` is configured in GitHub Settings > Secrets.
-
-### Release publishes but version doesn't update
-
-**Cause**: `pubspec.yaml` wasn't updated before merging to main.
-
-**Solution**: Ensure version is bumped in `pubspec.yaml` before releasing.
-
-### Test workflow doesn't run on PR
-
-**Cause**: File path filters may exclude your changes.
-
-**Solution**: The workflow triggers on:
-- Changes to `lib/**`, `test/**`, `example/**`, platform-specific code
-- Changes to `pubspec.yaml`
-- Changes to `.github/workflows/test-pr.yml`
-
-### Can't merge PR because checks are pending
-
-**Solution**: Wait for the workflow to complete, or check logs for errors:
-- Click "Actions" tab
-- Select your PR workflow
-- Review job logs
-
-## Next Steps
-
-### Setup (Required Once)
-
-1. ✅ Read [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md)
-2. ✅ Create Google Cloud Project and Service Account
-3. ✅ Generate JSON credentials
-4. ✅ Configure `GOOGLE_SERVICE_ACCOUNT_JSON` in GitHub Secrets
-5. ✅ Associate Service Account with pub.dev publisher access
-
-### Release Workflow
-
-1. Update version in `pubspec.yaml`
-2. Commit and push to `develop`
-3. Create Pull Request to `main`
-   - `test-pr.yml` workflow runs automatically
-   - ✅ All checks must pass to merge
-4. Merge PR to `main`
-   - `publish-release.yml` workflow triggers automatically
-   - 📦 Package is published to pub.dev
-   - 🏷️ GitHub Release is created with tag `v{version}`
-
----
-
-For more details, see:
-- [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) — Complete Google OAuth setup guide
-- [GITFLOW.md](./GITFLOW.md) — Git Flow branching model
-- [GitVersion.yml](../GitVersion.yml) — Semantic versioning config
-- [.github/workflows/test-pr.yml](../.github/workflows/test-pr.yml) — Test workflow
-- [.github/workflows/publish-release.yml](../.github/workflows/publish-release.yml) — Publish workflow
+1. Update `pubspec.yaml` version.
+2. Update `CHANGELOG.md`.
+3. Open PR into `main` from `release/*` or `hotfix/*`.
+4. Ensure `PR Status Check` passes.
+5. Merge PR.
+6. Confirm `publish-release.yml` published to pub.dev and created `vX.Y.Z` GitHub Release.

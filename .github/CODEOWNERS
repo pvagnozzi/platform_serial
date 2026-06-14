@@ -1,0 +1,10 @@
+# Require owner review for sensitive areas.
+* @pvagnozzi
+.github/workflows/ @pvagnozzi
+.github/rulesets/ @pvagnozzi
+lib/ @pvagnozzi
+android/ @pvagnozzi
+ios/ @pvagnozzi
+linux/ @pvagnozzi
+macos/ @pvagnozzi
+windows/ @pvagnozzi

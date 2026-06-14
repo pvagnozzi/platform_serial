@@ -38,6 +38,13 @@
    - Security considerations
    - Integration patterns
 
+5. **[PROFESSIONALIZATION.md](./PROFESSIONALIZATION.md)** - Professional Repository Baseline
+   - GitFlow branch protection model
+   - CI quality gates and coverage workflow
+   - pub.dev trusted publishing workflow
+   - Copilot agents, skills, MCP and repository instructions
+   - Cross-platform developer setup scripts
+
 ### Quick Navigation by Task
 
 #### For Understanding the Implementation
@@ -70,7 +77,7 @@
 | **Android** | ✅ Complete | 5 | Kotlin + Channels | Production-ready |
 | **iOS** | ✅ Complete | 5 | Swift + Channels | Production-ready |
 
-### Features: 100% Complete ✅
+### Features: Professional baseline configured ✅
 
 - [x] Port enumeration
 - [x] Open/close operations
@@ -83,14 +90,15 @@
 - [x] Device attachment/detachment
 - [x] Mock/simulator support
 
-### Testing: 100% Passing ✅
+### Testing and Coverage Gate ✅
 
+```bash
+flutter analyze --fatal-infos --fatal-warnings
+flutter test --coverage
+dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100
 ```
-64 tests passed ✅
-0 tests failed ✅
-Runtime: ~1.5 minutes
-Coverage: Core functionality
-```
+
+The repository now has an explicit 100% line-coverage gate for the configured LCOV scope. Native hardware backends require platform-specific runners or documented coverage exclusions.
 
 ---
 

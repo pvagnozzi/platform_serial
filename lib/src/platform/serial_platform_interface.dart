@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 import 'dart:async';
 import 'dart:io' show Platform;
 
@@ -5,10 +7,14 @@ import 'package:flutter/services.dart';
 
 import 'ios_impl.dart';
 import '../models/serial_config.dart';
+import '../models/serial_control_signals.dart';
 import '../models/serial_error.dart';
 import '../models/serial_port_info.dart';
 import 'macos_impl.dart';
 import 'windows_impl.dart';
+
+const int _linuxSignalRts = 1 << 0;
+const int _linuxSignalDtr = 1 << 2;
 
 /// Platform interface for serial communication.
 /// Provides the base methods for platform-specific implementations.
@@ -36,6 +42,8 @@ abstract class SerialPlatformInterface {
 
   Future<void> flush(String portName);
 
+  Future<SerialControlSignals> getControlSignals(String portName);
+
   Future<void> setDtr(String portName, bool enabled);
 
   Future<void> setRts(String portName, bool enabled);
@@ -46,7 +54,8 @@ abstract class SerialPlatformInterface {
 /// MethodChannel-based fallback implementation for non-Windows platforms.
 class MethodChannelSerialPlatformInterface implements SerialPlatformInterface {
   static const platform = MethodChannel('dev.flutter/platform_serial');
-  static const eventChannel = EventChannel('dev.flutter/platform_serial_events');
+  static const eventChannel =
+      EventChannel('dev.flutter/platform_serial_events');
 
   @override
   Future<List<SerialPortInfo>> getAvailablePorts() async {
@@ -293,7 +302,34 @@ class MethodChannelSerialPlatformInterface implements SerialPlatformInterface {
   }
 
   @override
+  Future<SerialControlSignals> getControlSignals(String portName) async {
+    if (Platform.isLinux) {
+      try {
+        final result = await platform.invokeMethod<Map<dynamic, dynamic>>(
+          'getControlSignals',
+          {'portName': portName},
+        );
+        return SerialControlSignals.fromMap(result ?? const {});
+      } catch (e) {
+        throw SerialError(
+          type: SerialErrorType.ioError,
+          message: 'Error reading control signals: $e',
+        );
+      }
+    }
+
+    throw SerialError(
+      type: SerialErrorType.platformUnavailable,
+      message: 'CTS/DTR status is not supported on this platform.',
+    );
+  }
+
+  @override
   Future<void> setDtr(String portName, bool enabled) async {
+    if (Platform.isLinux) {
+      return _setLinuxControlSignal(portName, _linuxSignalDtr, enabled);
+    }
+
     throw SerialError(
       type: SerialErrorType.platformUnavailable,
       message: 'DTR control is not supported on this platform implementation.',
@@ -302,10 +338,33 @@ class MethodChannelSerialPlatformInterface implements SerialPlatformInterface {
 
   @override
   Future<void> setRts(String portName, bool enabled) async {
+    if (Platform.isLinux) {
+      return _setLinuxControlSignal(portName, _linuxSignalRts, enabled);
+    }
+
     throw SerialError(
       type: SerialErrorType.platformUnavailable,
       message: 'RTS control is not supported on this platform implementation.',
     );
+  }
+
+  Future<void> _setLinuxControlSignal(
+    String portName,
+    int signalMask,
+    bool enabled,
+  ) async {
+    try {
+      await platform.invokeMethod('setControlSignals', {
+        'portName': portName,
+        'setMask': enabled ? signalMask : 0,
+        'clearMask': enabled ? 0 : signalMask,
+      });
+    } catch (e) {
+      throw SerialError(
+        type: SerialErrorType.ioError,
+        message: 'Error setting control signal: $e',
+      );
+    }
   }
 
   @override

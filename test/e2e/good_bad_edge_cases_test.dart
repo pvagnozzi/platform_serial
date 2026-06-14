@@ -50,7 +50,7 @@ void main() {
       when(() => mockPlatform.flush(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       // Verify available ports.
       final ports = await manager.getAvailablePorts();
@@ -90,10 +90,11 @@ void main() {
       });
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port = await manager.openPort('COM1');
-      final result = await port.readUntil('\n', timeout: Duration(seconds: 2));
+      final result =
+          await port.readUntil('\n', timeout: const Duration(seconds: 2));
 
       expect(result, contains('Hello'));
 
@@ -139,7 +140,7 @@ void main() {
       when(() => mockPlatform.openPort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port = await manager.openPort('COM1');
       await manager.closePort('COM1');
@@ -155,11 +156,11 @@ void main() {
     });
 
     test('error: opening already-open port', () async {
-      final config = SerialConfig(portName: 'COM1');
+      const config = SerialConfig(portName: 'COM1');
 
       when(() => mockPlatform.openPort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port = SerialPort(platform: mockPlatform);
       await port.open(config);
@@ -177,9 +178,9 @@ void main() {
     });
 
     test('error: read timeout', () async {
-      final config = SerialConfig(
+      const config = SerialConfig(
         portName: 'COM1',
-        readTimeout: const Duration(milliseconds: 50),
+        readTimeout: Duration(milliseconds: 50),
       );
 
       when(() => mockPlatform.openPort(any())).thenAnswer((_) async => {});
@@ -188,7 +189,7 @@ void main() {
         return Uint8List(0);
       });
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
 
       final port = SerialPort(platform: mockPlatform);
@@ -213,7 +214,7 @@ void main() {
         message: 'Write error',
       ));
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
 
       final port = await manager.openPort('COM1');
@@ -292,7 +293,7 @@ void main() {
           .thenAnswer((_) async => largeData);
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port = await manager.openPort('COM1');
       final data = await port.readSync();
@@ -334,7 +335,7 @@ void main() {
           .thenAnswer((_) async => mixedData);
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port = await manager.openPort('COM1');
       final data = await port.read(9);
@@ -347,20 +348,20 @@ void main() {
     });
 
     test('configuration with all non-default parameters', () async {
-      final config = SerialConfig(
+      const config = SerialConfig(
         portName: 'COM1',
         baudRate: 256000,
         dataBits: 5,
         stopBits: SerialStopBits.two,
         parity: SerialParity.odd,
         flowControl: SerialFlowControl.xonxoff,
-        readTimeout: const Duration(milliseconds: 100),
-        writeTimeout: const Duration(milliseconds: 100),
+        readTimeout: Duration(milliseconds: 100),
+        writeTimeout: Duration(milliseconds: 100),
       );
 
       when(() => mockPlatform.openPort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
 
       final port = SerialPort(platform: mockPlatform);
@@ -378,7 +379,7 @@ void main() {
       when(() => mockPlatform.openPort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port = await manager.openPort('COM1');
 

@@ -39,3 +39,6 @@ Thumbs.db
 # Copilot local logs/artifacts
 .github/logs/
 
+# Local agent/runtime artifacts
+.crew/
+.pi/

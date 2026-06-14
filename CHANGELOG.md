@@ -1,3 +1,25 @@
+## 0.1.1
+
+### Professional Hardening and Control Signals
+
+#### Added
+- Public `SerialControlSignals` model for RTS, CTS, DTR, DSR and DCD status snapshots.
+- `SerialPort.getControlSignals()` and `SerialPort.getCts()` APIs.
+- Linux MethodChannel support for reading control signals and setting DTR/RTS through the existing native `getControlSignals` and `setControlSignals` handlers.
+- Windows FFI support for reading CTS/DSR/DCD status and tracked DTR/RTS output state.
+- 100% line-coverage gate for the configured test coverage scope.
+- Professional GitFlow branch-protection ruleset, release manager agent, Copilot quality gate skill, repository templates and cross-platform development setup scripts.
+
+#### Changed
+- Release publishing now targets pub.dev trusted publishing/OIDC and creates GitHub tags/releases only after successful publish.
+- Documentation now includes Mermaid diagrams for architecture, quality gate, GitFlow and release workflows.
+
+#### Verified
+- `flutter analyze --fatal-infos --fatal-warnings`
+- `flutter test --coverage`
+- `dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100`
+- `flutter pub publish --dry-run`
+
 ## 0.1.0
 
 ### First Release - Core Functionality

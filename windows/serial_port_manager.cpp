@@ -397,6 +397,13 @@ bool SerialPortManager::ResetPortBuffers(int64_t port_id, WindowsError* error) {
   return port != nullptr && port->ResetBuffers(error);
 }
 
+bool SerialPortManager::GetControlSignals(int64_t port_id,
+                                           uint32_t* signal_mask,
+                                           WindowsError* error) {
+  const auto port = GetPort(port_id, error);
+  return port != nullptr && port->GetControlSignals(signal_mask, error);
+}
+
 bool SerialPortManager::SetDtr(int64_t port_id,
                                bool enabled,
                                WindowsError* error) {
