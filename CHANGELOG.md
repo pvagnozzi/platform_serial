@@ -1,3 +1,19 @@
+## 0.1.2
+
+### Pub.dev Quality Cleanup
+
+#### Changed
+- Shortened the package description to satisfy pub.dev search-result metadata guidance.
+- Updated the documentation URL to the reachable `dev` branch documentation path.
+- Upgraded Flutter lint rules in the root package and example app to remove analyzer/lint warnings.
+- Added `.pubignore` exclusions for local runtime, coverage, build, and generated ephemeral artifacts.
+
+#### Verified
+- `flutter analyze --fatal-infos --fatal-warnings`
+- `flutter test --coverage`
+- `dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100`
+- `flutter pub publish --dry-run`
+
 ## 0.1.1
 
 ### Professional Hardening and Control Signals

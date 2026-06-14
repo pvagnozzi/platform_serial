@@ -1,5 +1,5 @@
-/// Package platform_serial - Unified serial port management.
-library platform_serial;
+/// Unified serial port management library.
+library;
 
 export 'src/contracts/serial_port_interface.dart';
 export 'src/models/serial_config.dart';
