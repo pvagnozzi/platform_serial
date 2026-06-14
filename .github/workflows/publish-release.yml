@@ -1,26 +1,45 @@
 name: Publish Release to pub.dev
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types: [closed]
+    branches: [main]
     paths:
-      - 'pubspec.yaml'
+      - pubspec.yaml
+      - CHANGELOG.md
+      - lib/**
+      - .github/workflows/publish-release.yml
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (optional, auto-detect if empty)'
+        description: Version to publish. Must match pubspec.yaml when provided.
         required: false
+        type: string
+      dry_run:
+        description: Validate only; do not publish or create a release.
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  id-token: write
+  pull-requests: read
+
+concurrency:
+  group: publish-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   publish:
-    name: Publish to pub.dev
+    name: Publish package and create GitHub release
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main')
+      }}
+    environment: pub-dev
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,130 +47,77 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.10.0
+          flutter-version: "3.x"
           channel: stable
+          cache: true
 
       - name: Resolve dependencies
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
 
-      - name: Run tests
-        run: flutter test test/unit/ test/integration/
-
-      - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-
-      - name: Setup pub.dev credentials from Google OAuth
+      - name: Run tests with coverage gate
         run: |
-          mkdir -p ~/.pub-cache
-          
-          # Get OAuth2 access token from gcloud
-          ACCESS_TOKEN=$(gcloud auth application-default print-access-token)
-          
-          # Create pub.dev credentials.json with OAuth2 token
-          cat > ~/.pub-cache/credentials.json << EOF
-          {
-            "version": 1,
-            "hosted": [
-              {
-                "url": "https://pub.dev",
-                "credentialType": "oauth2",
-                "clientId": "818368855108-8grd2eg9tj9f4o01905ktndnj4kolaba.apps.googleusercontent.com",
-                "scopes": [
-                  "openid",
-                  "https://www.googleapis.com/auth/userinfo.email"
-                ],
-                "token": "$ACCESS_TOKEN"
-              }
-            ]
-          }
-          EOF
-          
-          chmod 600 ~/.pub-cache/credentials.json
+          flutter test --coverage
+          dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100
 
-      - name: Get version from pubspec.yaml
+      - name: Validate version
         id: version
+        shell: bash
         run: |
-          VERSION=$(grep "^version:" pubspec.yaml | head -n 1 | cut -d' ' -f2)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Publishing version: $VERSION"
+          set -euo pipefail
+          VERSION=$(awk '/^version:/ {print $2; exit}' pubspec.yaml)
+          if [ -z "$VERSION" ]; then
+            echo "::error::Unable to read version from pubspec.yaml"
+            exit 1
+          fi
+          INPUT_VERSION="${{ inputs.version }}"
+          if [ -n "$INPUT_VERSION" ] && [ "$INPUT_VERSION" != "$VERSION" ]; then
+            echo "::error::workflow_dispatch version '$INPUT_VERSION' does not match pubspec.yaml '$VERSION'"
+            exit 1
+          fi
+          TAG="v$VERSION"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists. Bump pubspec.yaml before publishing."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Pub.dev dry run
+        run: flutter pub publish --dry-run
+
+      - name: Publish to pub.dev using trusted publishing
+        if: ${{ inputs.dry_run != true }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          release_name: Release v${{ steps.version.outputs.version }}
-          draft: false
-          prerelease: false
+          PUB_ENVIRONMENT: github-actions
+        run: dart pub publish --force
 
-      - name: Publish to pub.dev
+      - name: Create and push tag
+        if: ${{ inputs.dry_run != true }}
         run: |
-          echo "Publishing platform_serial v${{ steps.version.outputs.version }} to pub.dev..."
-          flutter pub publish --force
-        env:
-          PUB_ENVIRONMENT: "ci.github"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
 
-      - name: Comment on PR/Release with success
-        if: success()
-        uses: actions/github-script@v7
+      - name: Create GitHub release
+        if: ${{ inputs.dry_run != true }}
+        uses: softprops/action-gh-release@v2
         with:
-          script: |
-            const version = '${{ steps.version.outputs.version }}';
-            const releaseUrl = 'https://pub.dev/packages/platform_serial/versions/' + version;
-            github.rest.repos.createDispatchEvent({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              event_type: 'publish-success',
-              client_payload: {
-                version: version,
-                url: releaseUrl
-              }
-            });
-            console.log(`✅ Published version ${version} to pub.dev`);
-            console.log(`📦 View at: ${releaseUrl}`);
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: platform_serial ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false
 
-      - name: Comment on PR/Release with failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const version = '${{ steps.version.outputs.version }}';
-            console.error(`❌ Failed to publish version ${version} to pub.dev`);
-            console.error('Check workflow logs for details');
-
-
-      - name: Comment on related PR
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const version = '${{ steps.version.outputs.version }}';
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `✅ **Release Published!**\n\nVersion \`${version}\` has been successfully published to [pub.dev](https://pub.dev/packages/platform_serial).`
-            });
-
-      - name: Failure notification
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const version = '${{ steps.version.outputs.version }}';
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `❌ **Release Failed**\n\nFailed to publish version \`${version}\` to pub.dev. Check the workflow logs for details.`
-            });
+      - name: Publish summary
+        if: always()
+        run: |
+          {
+            echo "## 📦 Publish summary"
+            echo "- Version: ${{ steps.version.outputs.version }}"
+            echo "- Tag: ${{ steps.version.outputs.tag }}"
+            echo "- Dry run: ${{ inputs.dry_run }}"
+            echo "- pub.dev: https://pub.dev/packages/platform_serial"
+          } >> "$GITHUB_STEP_SUMMARY"

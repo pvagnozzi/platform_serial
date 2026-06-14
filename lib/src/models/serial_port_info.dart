@@ -77,7 +77,6 @@ class SerialPortInfo {
       platform.hashCode;
 
   @override
-  String toString() =>
-      'SerialPortInfo(name: $portName, desc: $description, '
+  String toString() => 'SerialPortInfo(name: $portName, desc: $description, '
       'vid: $vendorId, pid: $productId, sn: $serialNumber, open: $isOpen)';
 }

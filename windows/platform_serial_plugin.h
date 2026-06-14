@@ -9,7 +9,9 @@
 #define platform_serial_EXPORT
 #endif
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 
 // Status codes returned by the exported FFI functions.
 enum FlutterSerialStatus : int32_t {
@@ -85,6 +87,13 @@ platform_serial_EXPORT int32_t platform_serial_reset_port_buffers(
     uint32_t* error_code,
     char** error_message);
 
+// Returns a bit mask containing RTS, CTS, DTR, DSR, and DCD signal states.
+platform_serial_EXPORT int32_t platform_serial_get_control_signals(
+    int64_t port_id,
+    uint32_t* signal_mask,
+    uint32_t* error_code,
+    char** error_message);
+
 // Sets the DTR line state for the serial port.
 platform_serial_EXPORT int32_t platform_serial_set_dtr(
     int64_t port_id,
@@ -102,6 +111,8 @@ platform_serial_EXPORT int32_t platform_serial_set_rts(
 // Releases UTF-8 strings allocated by this library.
 platform_serial_EXPORT void platform_serial_free_string(char* value);
 
+#ifdef __cplusplus
 }  // extern "C"
+#endif
 
 #endif  // FLUTTER_PLUGIN_platform_serial_PLUGIN_H_

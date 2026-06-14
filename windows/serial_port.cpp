@@ -311,6 +311,53 @@ bool SerialPort::ResetBuffers(WindowsError* error) {
   return true;
 }
 
+bool SerialPort::GetControlSignals(uint32_t* signal_mask, WindowsError* error) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (signal_mask == nullptr) {
+    if (error != nullptr) {
+      error->Set(ERROR_INVALID_PARAMETER,
+                 "An output signal mask pointer is required.");
+    }
+    return false;
+  }
+
+  if (!EnsureOpen(error)) {
+    return false;
+  }
+
+  DWORD modem_status = 0;
+  if (!GetCommModemStatus(handle_, &modem_status)) {
+    const DWORD error_code = GetLastError();
+    if (error != nullptr) {
+      error->Set(error_code,
+                 FormatWindowsMessage("Unable to read modem signal status",
+                                      error_code));
+    }
+    return false;
+  }
+
+  uint32_t mask = 0;
+  if (rts_enabled_) {
+    mask |= 1u << 0;
+  }
+  if ((modem_status & MS_CTS_ON) != 0) {
+    mask |= 1u << 1;
+  }
+  if (dtr_enabled_) {
+    mask |= 1u << 2;
+  }
+  if ((modem_status & MS_DSR_ON) != 0) {
+    mask |= 1u << 3;
+  }
+  if ((modem_status & MS_RLSD_ON) != 0) {
+    mask |= 1u << 4;
+  }
+
+  *signal_mask = mask;
+  return true;
+}
+
 bool SerialPort::SetDtr(bool enabled, WindowsError* error) {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -328,6 +375,7 @@ bool SerialPort::SetDtr(bool enabled, WindowsError* error) {
     return false;
   }
 
+  dtr_enabled_ = enabled;
   return true;
 }
 
@@ -348,6 +396,7 @@ bool SerialPort::SetRts(bool enabled, WindowsError* error) {
     return false;
   }
 
+  rts_enabled_ = enabled;
   return true;
 }
 
@@ -381,11 +430,14 @@ bool SerialPort::ApplyConfiguration(WindowsError* error) {
   state.fInX = FALSE;
   state.fOutX = FALSE;
   state.fDtrControl = DTR_CONTROL_ENABLE;
+  dtr_enabled_ = true;
+  rts_enabled_ = false;
 
   switch (config_.flow_control) {
     case 1:
       state.fOutxCtsFlow = TRUE;
       state.fRtsControl = RTS_CONTROL_HANDSHAKE;
+      rts_enabled_ = true;
       break;
     case 2:
       state.fInX = TRUE;

@@ -338,6 +338,27 @@ int32_t platform_serial_reset_port_buffers(int64_t port_id,
   return WriteSuccess(error_code, error_message);
 }
 
+int32_t platform_serial_get_control_signals(int64_t port_id,
+                                            uint32_t* signal_mask,
+                                            uint32_t* error_code,
+                                            char** error_message) {
+  if (signal_mask == nullptr) {
+    WindowsError error;
+    error.Set(ERROR_INVALID_PARAMETER,
+              "An output signal mask pointer is required.");
+    return WriteError(error, error_code, error_message);
+  }
+
+  *signal_mask = 0;
+  WindowsError error;
+  if (!SerialPortManager::GetInstance().GetControlSignals(port_id, signal_mask,
+                                                          &error)) {
+    return WriteError(error, error_code, error_message);
+  }
+
+  return WriteSuccess(error_code, error_message);
+}
+
 int32_t platform_serial_set_dtr(int64_t port_id,
                                int32_t enabled,
                                uint32_t* error_code,

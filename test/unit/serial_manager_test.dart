@@ -10,7 +10,7 @@ class MockSerialPlatformInterface extends Mock
 void main() {
   setUpAll(() {
     registerFallbackValue(
-      SerialConfig(portName: 'COM1'),
+      const SerialConfig(portName: 'COM1'),
     );
     registerFallbackValue(Uint8List(0));
   });

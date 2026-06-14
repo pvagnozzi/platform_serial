@@ -1,6 +1,6 @@
 {
   "name": "awesome-copilot-mobile-stack",
-  "description": "Collection per sviluppo Flutter/mobile con seriale, quality guardrails e setup Copilot professionale.",
+  "description": "Professional Flutter/mobile serial package stack with quality guardrails, release automation, scripts, Copilot agents, skills, and MCP configuration.",
   "includes": {
     "instructions": [
       ".github/copilot-instructions.md",
@@ -10,18 +10,20 @@
     "skills": [
       ".github/skills/github-copilot-starter/SKILL.md",
       ".github/skills/readme-blueprint-generator/SKILL.md",
-      ".github/skills/copilot-instructions-blueprint-generator/SKILL.md"
+      ".github/skills/copilot-instructions-blueprint-generator/SKILL.md",
+      ".github/skills/platform-serial-quality-gate/SKILL.md"
     ],
     "agents": [
       ".github/agents/principal-software-engineer.agent.md",
       ".github/agents/gem-mobile-tester.agent.md",
-      ".github/agents/gem-implementer-mobile.agent.md"
-    ],
-    "hooks": [
-      "hooks.json"
+      ".github/agents/gem-implementer-mobile.agent.md",
+      ".github/agents/release-manager.agent.md"
     ],
     "mcp": [
       ".github/mcp-config.json"
+    ],
+    "repository_instructions": [
+      "AGENTS.md"
     ]
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import '../models/serial_config.dart';
+import '../models/serial_control_signals.dart';
 import '../models/serial_error.dart';
 
 /// Abstract contract for the serial port interface.
@@ -56,6 +57,15 @@ abstract interface class SerialPortInterface {
 
   /// Gets the number of bytes available in the input buffer.
   Future<int> bytesAvailable();
+
+  /// Gets the current modem control/status signal states.
+  ///
+  /// Throws [SerialErrorType.platformUnavailable] on platforms that do not
+  /// expose modem-control status.
+  Future<SerialControlSignals> getControlSignals();
+
+  /// Returns whether the CTS input line is currently asserted.
+  Future<bool> getCts();
 
   /// Resets the input and output buffers.
   Future<void> resetBuffers();

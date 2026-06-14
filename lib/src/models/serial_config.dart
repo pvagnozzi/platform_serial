@@ -77,9 +77,9 @@ class SerialConfig {
     this.readTimeout = const Duration(seconds: 5),
     this.writeTimeout = const Duration(seconds: 5),
   }) : assert(
-         dataBits >= 5 && dataBits <= 8,
-         'dataBits must be between 5 and 8',
-       );
+          dataBits >= 5 && dataBits <= 8,
+          'dataBits must be between 5 and 8',
+        );
 
   /// Creates a copy of this configuration with updated values.
   SerialConfig copyWith({

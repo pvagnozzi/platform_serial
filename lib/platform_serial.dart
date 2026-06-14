@@ -3,6 +3,7 @@ library platform_serial;
 
 export 'src/contracts/serial_port_interface.dart';
 export 'src/models/serial_config.dart';
+export 'src/models/serial_control_signals.dart';
 export 'src/models/serial_data_type.dart';
 export 'src/models/serial_error.dart';
 export 'src/models/serial_port_info.dart';

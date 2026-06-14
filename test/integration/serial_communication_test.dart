@@ -11,7 +11,7 @@ class MockSerialPlatformInterface extends Mock
 void main() {
   setUpAll(() {
     registerFallbackValue(
-      SerialConfig(portName: 'COM1'),
+      const SerialConfig(portName: 'COM1'),
     );
     registerFallbackValue(Uint8List(0));
   });
@@ -37,7 +37,7 @@ void main() {
           .thenAnswer((_) async => Uint8List.fromList([72, 105])); // Hi
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port = await manager.openPort('COM1');
       expect(port.isOpen, true);
@@ -89,7 +89,7 @@ void main() {
       ));
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port = await manager.openPort('COM1');
 
@@ -114,7 +114,7 @@ void main() {
       });
 
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
 
       await manager.openPort(
@@ -139,7 +139,7 @@ void main() {
           .thenAnswer((_) async => Uint8List(0));
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port1 = await manager.openPort('COM1');
       final port2 = await manager.openPort('COM2');
@@ -159,7 +159,7 @@ void main() {
       when(() => mockPlatform.openPort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       var port = await manager.openPort('COM1');
       expect(port.isOpen, true);
@@ -181,7 +181,7 @@ void main() {
           .thenAnswer((_) async => 10);
       when(() => mockPlatform.closePort(any())).thenAnswer((_) async => {});
       when(() => mockPlatform.getEventStream(any()))
-          .thenAnswer((_) => Stream.empty());
+          .thenAnswer((_) => const Stream.empty());
 
       final port = await manager.openPort('COM1');
 

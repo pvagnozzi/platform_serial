@@ -12,8 +12,6 @@
   (G_TYPE_CHECK_INSTANCE_CAST((obj), platform_serial_plugin_get_type(), \
                               FlutterSerialPlugin))
 
-namespace {
-
 // The Dart package already talks to these generic channels from
 // SerialPlatformInterface, so the Linux plugin intentionally uses the shared
 // names instead of Linux-specific channel names.
@@ -632,8 +630,6 @@ static void platform_serial_plugin_init(FlutterSerialPlugin* self) {
   self->active_stream_port = nullptr;
   self->active_stream_source_id = 0;
 }
-
-}  // namespace
 
 void platform_serial_plugin_register_with_registrar(FlPluginRegistrar* registrar) {
   auto* plugin = platform_serial_PLUGIN(
