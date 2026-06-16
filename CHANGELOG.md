@@ -1,3 +1,23 @@
+## 0.1.3
+
+### Web Support and Copilot Governance Expansion
+
+#### Added
+- Flutter Web support through a Web Serial wrapper implementation with runtime-safe platform factory resolution.
+- New Copilot agents and skills for security/vulnerability auditing, performance optimization, and test generation (unit/integration/e2e/good-bad-edge paths).
+- Extended MCP server configuration for fetch, memory, sqlite, sequential thinking, and browser automation use cases.
+
+#### Changed
+- Refactored platform dispatch to separate IO and Web factories while preserving typed `SerialError` behavior.
+- Updated repository metadata and plugin configuration in `pubspec.yaml` for web plugin registration.
+- Updated README platform matrix and architecture diagram to include web support constraints.
+
+#### Verified
+- `flutter analyze --fatal-infos --fatal-warnings`
+- `flutter test --coverage`
+- `dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100`
+- `flutter build windows --debug` (example app)
+
 ## 0.1.2
 
 ### Pub.dev Quality Cleanup
