@@ -4,7 +4,7 @@
 
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white&style=for-the-badge)](https://dart.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-3.10%2B-02569B?logo=flutter&logoColor=white&style=for-the-badge)](https://flutter.dev)
-[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android%20%7C%20iOS-6f42c1?style=for-the-badge)](#platform-support)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android%20%7C%20iOS%20%7C%20Web-6f42c1?style=for-the-badge)](#platform-support)
 [![License](https://img.shields.io/badge/license-MIT-2ea44f?style=for-the-badge)](LICENSE)
 
 > 🔌 Professional cross-platform serial communication plugin for Flutter with sync/async I/O, streaming, typed errors, native bridge support, and a hardened GitFlow release pipeline.
@@ -32,7 +32,7 @@
 | Linux | FFI/native plugin | ✅ Supported |
 | Android | MethodChannel | ✅ Supported |
 | iOS | MethodChannel | ✅ Supported |
-| Web | Not applicable to serial hardware | ❌ Not supported |
+| Web | Browser Web Serial API wrapper | ⚠️ Supported with browser/device limitations |
 
 ---
 
@@ -50,6 +50,7 @@ flowchart LR
   Platform --> Mac[macOS FFI]
   Platform --> Android[Android MethodChannel]
   Platform --> IOS[iOS MethodChannel]
+  Platform --> Web[Web Serial wrapper]
 ```
 
 `SerialManager` owns the open-port registry. `SerialPort` owns per-port state, read/write helpers, and stream translation. Platform implementations stay behind `SerialPlatformInterface` so tests can inject mocks without physical serial hardware.
