@@ -110,6 +110,11 @@ class AppLocalizations {
       'closingFailed': 'Failed to close the active port.',
       'sendFailed': 'Failed to send data.',
       'chooseLanguage': 'Language',
+      'selectWebPort': 'Select & Connect (Web Serial)',
+      'webSerialNotice':
+          'Web Serial API requires Chrome/Edge 89+ and HTTPS or localhost.',
+      'webSerialUnsupported':
+          'Web Serial API is not supported in this browser.',
     },
     'fr': <String, String>{
       'appTitle': 'Terminal Série Platform',
@@ -604,6 +609,10 @@ class AppLocalizations {
       'closingFailed': '활성 포트를 닫을 수 없습니다.',
       'sendFailed': '데이터 전송에 실패했습니다.',
       'chooseLanguage': '언어',
+      'selectWebPort': '선택 & 연결 (Web Serial)',
+      'webSerialNotice':
+          'Web Serial API는 Chrome/Edge 89+ 및 HTTPS 또는 localhost가 필요합니다.',
+      'webSerialUnsupported': 'Web Serial API는 이 브라우저에서 지원되지 않습니다.',
     },
   };
 
@@ -644,6 +653,11 @@ class AppLocalizations {
   String get closingFailed => _lookup('closingFailed');
   String get sendFailed => _lookup('sendFailed');
   String get chooseLanguage => _lookup('chooseLanguage');
+
+  /// Web Serial API UI strings (also used as fallback on non-web platforms).
+  String get selectWebPort => _lookup('selectWebPort');
+  String get webSerialNotice => _lookup('webSerialNotice');
+  String get webSerialUnsupported => _lookup('webSerialUnsupported');
 
   String connectedTo(String portName) {
     return _lookup('connectedTo').replaceAll('{port}', portName);

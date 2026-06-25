@@ -1,0 +1,112 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Example — Windows (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "windows"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Example — Windows (Profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "windows", "--profile"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Example — Linux (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "linux"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Example — macOS (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "macos"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Example — Android (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "android"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Example — Android (Profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "android", "--profile"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Example — iOS (Debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "ios"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Example — Chrome (Web, JS)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "chrome"],
+      "cwd": "${workspaceFolder}",
+      "flutterMode": "debug"
+    },
+    {
+      "name": "Example — Chrome (Web, WASM)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "chrome", "--wasm"],
+      "cwd": "${workspaceFolder}",
+      "flutterMode": "debug"
+    },
+    {
+      "name": "Example — Web Server :8080 (JS)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "web-server", "--web-port", "8080"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Example — Web Server :8080 (WASM)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "web-server", "--web-port", "8080", "--wasm"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Example — All Devices (flutter run)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["-d", "all"],
+      "cwd": "${workspaceFolder}"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Example — Desktop (Windows + Web)",
+      "configurations": [
+        "Example — Windows (Debug)",
+        "Example — Chrome (Web, JS)"
+      ]
+    }
+  ]
+}

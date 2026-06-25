@@ -7,6 +7,10 @@ import 'package:platform_serial/platform_serial.dart';
 
 import '../models/terminal_entry.dart';
 
+/// Port name used on the web platform where the browser's native port picker
+/// selects the device (Web Serial API `requestPort()`).
+const String _kWebPortName = 'web-serial-port';
+
 abstract class SerialConnection {
   bool get isOpen;
   Stream<String> get textStream;
@@ -59,6 +63,11 @@ class _PlatformSerialConnection implements SerialConnection {
   Future<void> close() => _port.close();
 }
 
+/// Controls the serial terminal state for the example app.
+///
+/// On the **web** platform, the [isWeb] flag is `true` and
+/// [openWebPort] should be used instead of [open] — it triggers the
+/// browser's Web Serial port picker via `requestPort()`.
 class SerialTerminalController extends ChangeNotifier {
   SerialTerminalController({SerialApi? api})
       : _api = api ?? PlatformSerialApi();
@@ -79,11 +88,21 @@ class SerialTerminalController extends ChangeNotifier {
   bool get isBusy => _isBusy;
   String? get connectedPortName => _connectedPortName;
 
+  /// Whether the app is running in a web/WASM context.
+  ///
+  /// When `true` the UI should hide the port dropdown and show a
+  /// "Select & Connect" button that calls [openWebPort].
+  bool get isWeb => kIsWeb;
+
+  /// Refreshes the list of available ports.
+  ///
+  /// On **web**, `getAvailablePorts()` returns only ports previously granted
+  /// by the user; an empty list is normal and is **not** treated as an error.
   Future<void> refreshPorts() async {
     _setBusy(true);
     try {
       _availablePorts = await _api.getAvailablePorts();
-      if (_availablePorts.isEmpty) {
+      if (_availablePorts.isEmpty && !kIsWeb) {
         _append(TerminalEntryType.system, 'No serial ports found.');
       }
     } catch (error) {
@@ -93,6 +112,9 @@ class SerialTerminalController extends ChangeNotifier {
     }
   }
 
+  /// Opens a native serial port identified by [config.portName].
+  ///
+  /// On web, prefer [openWebPort] which triggers the browser port picker.
   Future<void> open(SerialConfig config) async {
     _setBusy(true);
     try {
@@ -111,6 +133,29 @@ class SerialTerminalController extends ChangeNotifier {
     } finally {
       _setBusy(false);
     }
+  }
+
+  /// Opens a Web Serial port by triggering the browser's native port picker.
+  ///
+  /// [baseConfig] provides baud rate, parity, flow control etc.
+  /// The [portName] is fixed to [_kWebPortName] so that [SerialManager] can
+  /// track it across open/close cycles.
+  ///
+  /// This method **must** be called from a user-gesture handler (button tap)
+  /// because `requestPort()` in the Web Serial API requires a user activation.
+  Future<void> openWebPort(SerialConfig baseConfig) {
+    return open(
+      SerialConfig(
+        portName: _kWebPortName,
+        baudRate: baseConfig.baudRate,
+        dataBits: baseConfig.dataBits,
+        stopBits: baseConfig.stopBits,
+        parity: baseConfig.parity,
+        flowControl: baseConfig.flowControl,
+        readTimeout: baseConfig.readTimeout,
+        writeTimeout: baseConfig.writeTimeout,
+      ),
+    );
   }
 
   Future<void> close() async {

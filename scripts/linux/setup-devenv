@@ -32,6 +32,14 @@ warn() { printf "%b⚠️  %s%b\n" "$yellow" "$1" "$reset"; }
 fail() { printf "%b❌ %s%b\n" "$red" "$1" "$reset"; exit 1; }
 run() { if [[ "$DRY_RUN" == 1 ]]; then warn "dry-run: $*"; else eval "$@"; fi; }
 have() { command -v "$1" >/dev/null 2>&1; }
+sudo_prefix() { [[ "${EUID}" == 0 ]] && printf '' || printf 'sudo '; }
+require_elevation() {
+  local action="$1"
+  if [[ "$DRY_RUN" == 1 ]]; then warn "dry-run: root/sudo would be required for $action"; return 0; fi
+  if [[ "${EUID}" == 0 ]]; then return 0; fi
+  if ! have sudo; then fail "Root privileges or sudo are required for $action. Install manually or re-run with sudo available."; fi
+  sudo -v || fail "Unable to validate sudo credentials for $action."
+}
 confirm() { [[ "$YES" == 1 ]] && return 0; read -r -p "$1 [y/N] " reply; [[ "$reply" =~ ^[Yy]$ ]]; }
 
 while [[ $# -gt 0 ]]; do
@@ -47,11 +55,15 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+if [[ "${EUID}" == 0 && "$DRY_RUN" == 0 ]]; then
+  fail "Do not run the whole setup as root. Run as a normal user; the script validates sudo only for package-manager install actions."
+fi
+
 install_package() {
   local package="$1"
-  if have apt-get; then run "sudo apt-get update && sudo apt-get install -y $package"
-  elif have dnf; then run "sudo dnf install -y $package"
-  elif have pacman; then run "sudo pacman -Sy --noconfirm $package"
+  if have apt-get; then require_elevation "install $package with apt"; run "$(sudo_prefix)apt-get update && $(sudo_prefix)apt-get install -y $package"
+  elif have dnf; then require_elevation "install $package with dnf"; run "$(sudo_prefix)dnf install -y $package"
+  elif have pacman; then require_elevation "install $package with pacman"; run "$(sudo_prefix)pacman -Sy --noconfirm $package"
   else warn "No supported package manager found. Install $package manually."
   fi
 }
@@ -76,7 +88,8 @@ if [[ "$SKIP_ANDROID_STUDIO" == 0 ]]; then
   if have studio || [[ -d /opt/android-studio ]]; then
     ok "Android Studio appears to be installed"
   elif have snap && confirm "Install Android Studio via snap?"; then
-    run "sudo snap install android-studio --classic"
+    require_elevation "install Android Studio with snap"
+    run "$(sudo_prefix)snap install android-studio --classic"
   else
     warn "Install Android Studio manually from https://developer.android.com/studio"
   fi
@@ -84,7 +97,7 @@ fi
 
 if [[ "$SKIP_OH_MY_POSH" == 0 ]]; then
   if have oh-my-posh; then ok "Oh My Posh already installed"; else log "🎨 Installing Oh My Posh"; run "curl -s https://ohmyposh.dev/install.sh | bash -s"; fi
-  mkdir -p "$HOME/.poshthemes"
+  [[ -d "$HOME/.poshthemes" ]] || run "mkdir -p '$HOME/.poshthemes'"
   THEME="$HOME/.poshthemes/M365Princess.omp.json"
   if [[ ! -f "$THEME" ]]; then
     run "curl -fsSL -o '$THEME' https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/M365Princess.omp.json"

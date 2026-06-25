@@ -82,6 +82,10 @@ class _SerialTerminalPageState extends State<SerialTerminalPage> {
   }
 
   Future<void> _openConnection(AppLocalizations t) async {
+    if (_controller.isWeb) {
+      await _openWebConnection(t);
+      return;
+    }
     if (_selectedPort == null) {
       _showSnack(t.noPorts);
       return;
@@ -96,9 +100,36 @@ class _SerialTerminalPageState extends State<SerialTerminalPage> {
           parity: _parity,
           flowControl: _flowControl,
           readTimeout: Duration(
-              milliseconds: int.tryParse(_readTimeoutController.text) ?? 5000),
+              milliseconds:
+                  int.tryParse(_readTimeoutController.text) ?? 5000),
           writeTimeout: Duration(
-              milliseconds: int.tryParse(_writeTimeoutController.text) ?? 5000),
+              milliseconds:
+                  int.tryParse(_writeTimeoutController.text) ?? 5000),
+        ),
+      );
+    } catch (_) {
+      _showSnack(t.openingFailed);
+    }
+  }
+
+  /// Opens a port via the Web Serial API browser picker.
+  /// Must be called from a user-gesture handler.
+  Future<void> _openWebConnection(AppLocalizations t) async {
+    try {
+      await _controller.openWebPort(
+        SerialConfig(
+          portName: 'web-serial-port',
+          baudRate: int.tryParse(_baudController.text) ?? 115200,
+          dataBits: _dataBits,
+          stopBits: _stopBits,
+          parity: _parity,
+          flowControl: _flowControl,
+          readTimeout: Duration(
+              milliseconds:
+                  int.tryParse(_readTimeoutController.text) ?? 5000),
+          writeTimeout: Duration(
+              milliseconds:
+                  int.tryParse(_writeTimeoutController.text) ?? 5000),
         ),
       );
     } catch (_) {
@@ -304,26 +335,68 @@ class _SerialTerminalPageState extends State<SerialTerminalPage> {
                             ),
                           ],
                         ),
+                        // Web Serial API banner — shown only on web.
+                        if (_controller.isWeb) ...<Widget>[
+                          Material(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .secondaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              child: Row(
+                                children: <Widget>[
+                                  Icon(
+                                    Icons.info_outline,
+                                    size: 18,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSecondaryContainer,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      t.webSerialNotice,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSecondaryContainer,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         const SizedBox(height: 12),
                         Row(
                           children: <Widget>[
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                initialValue: ports.any(
-                                        (DropdownMenuItem<String> item) =>
-                                            item.value == _selectedPort)
-                                    ? _selectedPort
-                                    : null,
-                                items: ports,
-                                onChanged: (String? value) {
-                                  setState(() {
-                                    _selectedPort = value;
-                                  });
-                                },
-                                decoration: InputDecoration(labelText: t.port),
+                            if (!_controller.isWeb) ...<Widget>[
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  initialValue: ports.any(
+                                          (DropdownMenuItem<String> item) =>
+                                              item.value == _selectedPort)
+                                      ? _selectedPort
+                                      : null,
+                                  items: ports,
+                                  onChanged: (String? value) {
+                                    setState(() {
+                                      _selectedPort = value;
+                                    });
+                                  },
+                                  decoration:
+                                      InputDecoration(labelText: t.port),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
+                              const SizedBox(width: 12),
+                            ],
                             Expanded(
                               child: TextField(
                                 controller: _baudController,
@@ -465,7 +538,11 @@ class _SerialTerminalPageState extends State<SerialTerminalPage> {
                                   ? null
                                   : () => _openConnection(t),
                               icon: const Icon(Icons.usb),
-                              label: Text(t.open),
+                              label: Text(
+                                _controller.isWeb
+                                    ? t.selectWebPort
+                                    : t.open,
+                              ),
                             ),
                             FilledButton.tonalIcon(
                               onPressed: (!_controller.isBusy &&

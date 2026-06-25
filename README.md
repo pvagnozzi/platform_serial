@@ -32,7 +32,12 @@
 | Linux | FFI/native plugin | ✅ Supported |
 | Android | MethodChannel | ✅ Supported |
 | iOS | MethodChannel | ✅ Supported |
-| Web | Browser Web Serial API wrapper | ⚠️ Supported with browser/device limitations |
+| Web (JS) | Browser Web Serial API | ✅ Supported (Chrome/Edge 89+) |
+| Web (WASM) | Browser Web Serial API | ✅ Supported (Chrome/Edge 89+) |
+
+> **Web requirements**: Chrome or Edge 89+, HTTPS or `http://localhost`,
+> and a user gesture to trigger `navigator.serial.requestPort()`.
+> See [doc/WEB_WASM.md](doc/WEB_WASM.md) for full details.
 
 ---
 
