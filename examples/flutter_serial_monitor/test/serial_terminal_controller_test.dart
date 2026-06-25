@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:platform_serial/platform_serial.dart';
-import 'package:platform_serial_example/src/services/serial_terminal_controller.dart';
+import 'package:flutter_serial_monitor/src/services/serial_terminal_controller.dart';
 
 class FakeSerialConnection implements SerialConnection {
   final StreamController<String> _textController =

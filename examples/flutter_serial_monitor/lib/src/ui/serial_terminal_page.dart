@@ -100,11 +100,9 @@ class _SerialTerminalPageState extends State<SerialTerminalPage> {
           parity: _parity,
           flowControl: _flowControl,
           readTimeout: Duration(
-              milliseconds:
-                  int.tryParse(_readTimeoutController.text) ?? 5000),
+              milliseconds: int.tryParse(_readTimeoutController.text) ?? 5000),
           writeTimeout: Duration(
-              milliseconds:
-                  int.tryParse(_writeTimeoutController.text) ?? 5000),
+              milliseconds: int.tryParse(_writeTimeoutController.text) ?? 5000),
         ),
       );
     } catch (_) {
@@ -125,11 +123,9 @@ class _SerialTerminalPageState extends State<SerialTerminalPage> {
           parity: _parity,
           flowControl: _flowControl,
           readTimeout: Duration(
-              milliseconds:
-                  int.tryParse(_readTimeoutController.text) ?? 5000),
+              milliseconds: int.tryParse(_readTimeoutController.text) ?? 5000),
           writeTimeout: Duration(
-              milliseconds:
-                  int.tryParse(_writeTimeoutController.text) ?? 5000),
+              milliseconds: int.tryParse(_writeTimeoutController.text) ?? 5000),
         ),
       );
     } catch (_) {
@@ -539,9 +535,7 @@ class _SerialTerminalPageState extends State<SerialTerminalPage> {
                                   : () => _openConnection(t),
                               icon: const Icon(Icons.usb),
                               label: Text(
-                                _controller.isWeb
-                                    ? t.selectWebPort
-                                    : t.open,
+                                _controller.isWeb ? t.selectWebPort : t.open,
                               ),
                             ),
                             FilledButton.tonalIcon(

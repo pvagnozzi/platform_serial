@@ -1,7 +1,9 @@
 # Copyright (c) 2026 Piergiorgio Vagnozzi.
 # Licensed under the MIT License.
-name: platform_serial_example
-description: Professional serial terminal example application for platform_serial.
+name: flutter_serial_monitor
+description: >-
+  Flutter Serial Monitor — professional serial terminal example
+  for the platform_serial plugin.
 publish_to: none
 
 version: 1.0.0+1
@@ -16,7 +18,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   platform_serial:
-    path: ..
+    # platform_serial root is two levels up from
+    # examples/flutter_serial_monitor/
+    path: ../..   
 
 dev_dependencies:
   flutter_test:

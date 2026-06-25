@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:platform_serial/platform_serial.dart';
-import 'package:platform_serial_example/src/localization/app_localizations.dart';
-import 'package:platform_serial_example/src/services/serial_terminal_controller.dart';
-import 'package:platform_serial_example/src/ui/serial_terminal_page.dart';
+import 'package:flutter_serial_monitor/src/localization/app_localizations.dart';
+import 'package:flutter_serial_monitor/src/services/serial_terminal_controller.dart';
+import 'package:flutter_serial_monitor/src/ui/serial_terminal_page.dart';
 
 class _NoopConnection implements SerialConnection {
   @override

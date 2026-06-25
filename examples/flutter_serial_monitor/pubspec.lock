@@ -160,7 +160,7 @@ packages:
   platform_serial:
     dependency: "direct main"
     description:
-      path: ".."
+      path: "../.."
       relative: true
     source: path
     version: "0.2.0"

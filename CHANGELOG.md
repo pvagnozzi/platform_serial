@@ -1,3 +1,58 @@
+## 0.2.1
+
+### Repository Restructure: examples/, containers/, and command scripts
+
+#### Changed
+
+- **`example/` → `examples/flutter_serial_monitor/`**: the example app now
+  lives under the `examples/` folder with a descriptive name. Package renamed
+  from `platform_serial_example` to `flutter_serial_monitor`. Plugin path
+  updated to `../..`.
+- **Scripts reorganized**: setup scripts moved to `scripts/<platform>/setup/`;
+  new per-platform command scripts added under `scripts/<platform>/commands/`.
+- All setup scripts updated to include **Docker Desktop** installation
+  (Linux: Docker Engine via apt; macOS: via Homebrew cask; Windows: via
+  winget with automatic Hyper-V + WSL2 + Ubuntu prerequisite verification).
+- CI workflows (`test-pr.yml`) updated to reference the new path
+  `examples/flutter_serial_monitor`.
+
+#### Added
+
+- **`containers/`** directory with five Docker images sharing a single base:
+  - `containers/base/Dockerfile` — Flutter + Dart foundation (shared layer)
+  - `containers/build/Dockerfile` — multi-stage: web-js \| web-wasm \| pubdry
+  - `containers/test/Dockerfile` — `flutter test --coverage` + coverage gate
+  - `containers/analyze/Dockerfile` — `flutter analyze` on root + example
+  - `containers/security/Dockerfile` — Trivy FS, Trivy config, OSV-Scanner,
+    `pub outdated` (multi-stage: installs scanners from upstream)
+  - `containers/devcontainer/Dockerfile` — full dev env with Docker CLI,
+    Trivy, Linux desktop toolchain, non-root `vscode` user
+  - `containers/docker-compose.yml` — orchestrates all services
+  - `containers/README.md` — container guide with architecture diagram
+- **`containers/devcontainer/devcontainer.json`** and
+  **`.devcontainer/devcontainer.json`** — VS Code Dev Containers support.
+- **Command scripts** (`scripts/<platform>/commands/`) for each container:
+  `build`, `test`, `analyze`, `security`, `devcontainer`.
+  All scripts are idempotent, colorful (ANSI), emoji-decorated, support
+  `--dry-run`, `--force`, and `--help`/synopsis.
+- **Windows setup improvements** (`scripts/windows/setup/setup-devenv.ps1`):
+  - Checks and enables **Hyper-V** (Admin required).
+  - Checks and installs **WSL2** with **Ubuntu** (`wsl --install -d Ubuntu`).
+  - Installs **Docker Desktop** via winget.
+- **macOS setup improvements**: installs Docker Desktop via
+  `brew install --cask docker`.
+- **Linux setup improvements**: installs Docker Engine via apt repository
+  and adds the user to the `docker` group.
+
+#### Verified
+
+- `flutter analyze --fatal-infos --fatal-warnings` (root + example)
+- `flutter test --coverage` → 95/95 passed
+- `dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100`
+  → 100% (269/269)
+
+---
+
 ## 0.2.0
 
 ### Full Web & WASM Support

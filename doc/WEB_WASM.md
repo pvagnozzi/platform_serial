@@ -86,21 +86,21 @@ sequenceDiagram
 ### Debug (JS, hot reload)
 
 ```bash
-cd example
+cd examples/flutter_serial_monitor
 flutter run -d chrome
 ```
 
 ### Debug (WASM, hot restart only)
 
 ```bash
-cd example
+cd examples/flutter_serial_monitor
 flutter run -d chrome --wasm
 ```
 
 ### Production build (JS)
 
 ```bash
-cd example
+cd examples/flutter_serial_monitor
 flutter build web
 # serve build/web/ from an HTTPS origin
 ```
@@ -108,7 +108,7 @@ flutter build web
 ### Production build (WASM)
 
 ```bash
-cd example
+cd examples/flutter_serial_monitor
 flutter build web --wasm
 # serve build/web/ from an HTTPS origin
 ```
@@ -121,9 +121,9 @@ mkcert -install
 mkcert localhost
 
 # Serve with caddy or python
-caddy file-server --listen :8443 --root example/build/web --tls localhost.pem --tls-key localhost-key.pem
+caddy file-server --listen :8443 --root examples/flutter_serial_monitor/build/web --tls localhost.pem --tls-key localhost-key.pem
 # or
-cd example && flutter run -d web-server --web-port 8080
+cd examples/flutter_serial_monitor && flutter run -d web-server --web-port 8080
 # then access via http://localhost:8080 (localhost is exempt from HTTPS)
 ```
 
@@ -131,7 +131,7 @@ cd example && flutter run -d web-server --web-port 8080
 
 ## VS Code launch configurations
 
-The example ships with `.vscode/launch.json` containing ready-to-use
+The example ships with `examples/flutter_serial_monitor/.vscode/launch.json` containing ready-to-use
 configurations for **all platforms**:
 
 | Configuration | Platform |
@@ -150,7 +150,7 @@ configurations for **all platforms**:
 | Example — All Devices | All connected devices |
 
 IntelliJ / Android Studio run configurations are in
-`example/.idea/runConfigurations/`.
+`examples/flutter_serial_monitor/.idea/runConfigurations/`.
 
 ---
 

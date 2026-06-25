@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# ============================================================
+#  🏗️  build — platform_serial Docker Build Command
+#  Builds the Flutter web output using the build container.
+#  Idempotent: rebuilds only when sources change (--force rebuilds
+#  the image unconditionally).
+# ============================================================
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+COMPOSE_FILE="${REPO_ROOT}/containers/docker-compose.yml"
+
+bold='\033[1m'; green='\033[32m'; yellow='\033[33m'; red='\033[31m'; cyan='\033[36m'; reset='\033[0m'
+log()  { printf "%b%s%b\n" "$cyan"   "  $1" "$reset"; }
+ok()   { printf "%b✅  %s%b\n" "$green"  "$1" "$reset"; }
+warn() { printf "%b⚠️   %s%b\n" "$yellow" "$1" "$reset"; }
+fail() { printf "%b❌  %s%b\n" "$red"   "$1" "$reset"; exit 1; }
+run()  { if [[ "$DRY_RUN" == 1 ]]; then warn "dry-run: $*"; else eval "$@"; fi; }
+
+YES=0; DRY_RUN=0; FORCE=0; TARGET="web-js"; NO_CACHE=""
+
+usage() {
+  cat <<'EOF'
+🏗️  build — Run the platform_serial Docker build container
+
+Synopsis:
+  scripts/linux/commands/build [options]
+
+Options:
+  -y, --yes           Run without interactive confirmations.
+      --dry-run       Print actions without executing them.
+      --force         Force rebuild of Docker images (--no-cache).
+      --target NAME   Build target: web-js | web-wasm | pubdry (default: web-js).
+  -h, --help          Show this help.
+
+Examples:
+  scripts/linux/commands/build                   # build Flutter web (JS)
+  scripts/linux/commands/build --target web-wasm # build Flutter web (WASM)
+  scripts/linux/commands/build --target pubdry   # validate pub.dev metadata
+  scripts/linux/commands/build --force           # rebuild images from scratch
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -y|--yes)      YES=1 ;;
+    --dry-run)     DRY_RUN=1 ;;
+    --force)       FORCE=1; NO_CACHE="--no-cache" ;;
+    --target)      TARGET="$2"; shift ;;
+    -h|--help)     usage; exit 0 ;;
+    *)             fail "Unknown option: $1" ;;
+  esac
+  shift
+done
+
+printf "%b%s%b\n" "$bold" "🏗️  platform_serial — Docker Build (target: ${TARGET})" "$reset"
+
+command -v docker >/dev/null 2>&1 || fail "Docker not found. Install Docker Desktop first."
+
+log "📦 Building base image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} base"
+
+log "🏗️  Building '${TARGET}' via build container..."
+run "BUILD_TARGET=${TARGET} docker compose -f '${COMPOSE_FILE}' run --rm ${NO_CACHE} build"
+
+ok "Build complete (target: ${TARGET})"

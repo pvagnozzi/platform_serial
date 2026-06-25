@@ -107,7 +107,7 @@ dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100
 Example app tests:
 
 ```bash
-cd example
+cd examples/flutter_serial_monitor
 flutter pub get
 flutter test
 ```
