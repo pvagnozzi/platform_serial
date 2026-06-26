@@ -27,8 +27,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-function Write-Step($m) { Write-Host "  $m"    -ForegroundColor Cyan   }
-function Write-Ok($m)   { Write-Host "✅  $m"  -ForegroundColor Green  }
+function Write-Step($m) { Write-Host "  $m"    -ForegroundColor Cyan }
+function Write-Ok($m) { Write-Host "✅  $m"  -ForegroundColor Green }
 function Write-Warn($m) { Write-Host "⚠️   $m" -ForegroundColor Yellow }
 function Write-Fail($m) { Write-Host "❌  $m"  -ForegroundColor Red; exit 1 }
 function Invoke-Cmd {
@@ -55,7 +55,8 @@ if ($Uninstall) {
     $current = (git -C $RepoRoot config --local core.hooksPath 2>$null)
     if (-not $current) {
         Write-Warn "core.hooksPath is not set — nothing to uninstall."
-    } else {
+    }
+    else {
         Invoke-Cmd "git -C '$RepoRoot' config --local --unset core.hooksPath"
         Write-Ok "core.hooksPath removed (was: $current)"
     }
@@ -66,7 +67,8 @@ if ($Uninstall) {
 $current = (git -C $RepoRoot config --local core.hooksPath 2>$null)
 if ($current -eq '.githooks') {
     Write-Ok "core.hooksPath already set to .githooks — nothing to do."
-} else {
+}
+else {
     Write-Step "Setting git config core.hooksPath = .githooks ..."
     Invoke-Cmd "git -C '$RepoRoot' config --local core.hooksPath .githooks"
     Write-Ok "core.hooksPath = .githooks"
@@ -92,3 +94,4 @@ Write-Host ""
 Write-Host "  Bypass (emergency): `$env:GIT_HOOKS_BYPASS=1; git <command>"
 Write-Host "  Uninstall:          .githooks\install.ps1 -Uninstall"
 Write-Host ""
+

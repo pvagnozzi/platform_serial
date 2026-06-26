@@ -20,7 +20,6 @@ concurrency:
 
 # ── Jobs ──────────────────────────────────────────────────────
 jobs:
-
   # ── 1. Dart analysis + pub dry-run ─────────────────────────
   analyze:
     name: 📊 Analyze & Validate

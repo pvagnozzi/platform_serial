@@ -11,81 +11,89 @@
 # Example: GIT_HOOKS_BYPASS=1 git commit -m "..."
 HOOK_BYPASS="${GIT_HOOKS_BYPASS:-0}"
 if [ "${HOOK_BYPASS}" = "1" ]; then
-  exit 0
+	exit 0
 fi
 
 # ── ANSI colors ──────────────────────────────────────────────
-if [ -t 1 ]; then   # only when stdout is a terminal
-  bold='\033[1m'
-  green='\033[32m'
-  yellow='\033[33m'
-  red='\033[31m'
-  cyan='\033[36m'
-  reset='\033[0m'
+if [ -t 1 ]; then # only when stdout is a terminal
+	bold='\033[1m'
+	green='\033[32m'
+	yellow='\033[33m'
+	red='\033[31m'
+	cyan='\033[36m'
+	reset='\033[0m'
 else
-  bold=''; green=''; yellow=''; red=''; cyan=''; reset=''
+	bold=''
+	green=''
+	yellow=''
+	red=''
+	cyan=''
+	reset=''
 fi
 
 # ── Logging helpers ──────────────────────────────────────────
-log()  { printf "%b  %s%b\n"    "$cyan"    "$1" "$reset"; }
-ok()   { printf "%b✅  %s%b\n"  "$green"   "$1" "$reset"; }
-warn() { printf "%b⚠️   %s%b\n" "$yellow"  "$1" "$reset"; }
-err()  { printf "%b❌  %s%b\n"  "$red"     "$1" "$reset"; }
-die()  { err "$1"; exit 1; }
-hdr()  { printf "\n%b%s%b\n"    "$bold"    "$1" "$reset"; }
+log() { printf "%b  %s%b\n" "$cyan" "$1" "$reset"; }
+ok() { printf "%b✅  %s%b\n" "$green" "$1" "$reset"; }
+warn() { printf "%b⚠️   %s%b\n" "$yellow" "$1" "$reset"; }
+err() { printf "%b❌  %s%b\n" "$red" "$1" "$reset"; }
+die() {
+	err "$1"
+	exit 1
+}
+hdr() { printf "\n%b%s%b\n" "$bold" "$1" "$reset"; }
 
 # ── Flutter detection ────────────────────────────────────────
 FLUTTER_BIN="$(command -v flutter 2>/dev/null || true)"
 DART_BIN="$(command -v dart 2>/dev/null || true)"
 
 require_flutter() {
-  if [ -z "$FLUTTER_BIN" ]; then
-    warn "flutter not found in PATH — skipping Flutter checks."
-    warn "Install Flutter: https://docs.flutter.dev/get-started/install"
-    return 1
-  fi
-  return 0
+	if [ -z "$FLUTTER_BIN" ]; then
+		warn "flutter not found in PATH — skipping Flutter checks."
+		warn "Install Flutter: https://docs.flutter.dev/get-started/install"
+		return 1
+	fi
+	return 0
 }
 
 # ── Repo root detection ──────────────────────────────────────
 # Works regardless of which subdirectory the hook runs from.
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 if [ -z "$REPO_ROOT" ]; then
-  die "Not inside a git repository."
+	die "Not inside a git repository."
 fi
 
 # ── Current branch ───────────────────────────────────────────
 current_branch() {
-  git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "HEAD"
+	git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "HEAD"
 }
 
 # ── Protected branch guard ───────────────────────────────────
 PROTECTED_BRANCHES="main develop dev"
 
 is_protected_branch() {
-  local branch="$1"
-  for protected in ${PROTECTED_BRANCHES}; do
-    [ "$branch" = "$protected" ] && return 0
-  done
-  return 1
+	local branch="$1"
+	for protected in ${PROTECTED_BRANCHES}; do
+		[ "$branch" = "$protected" ] && return 0
+	done
+	return 1
 }
 
 # ── Staged file helpers ──────────────────────────────────────
 staged_dart_files() {
-  git diff --cached --name-only --diff-filter=ACMR \
-    | grep '\.dart$' || true
+	git diff --cached --name-only --diff-filter=ACMR |
+		grep '\.dart$' || true
 }
 
 staged_lib_files() {
-  staged_dart_files | grep '^lib/' || true
+	staged_dart_files | grep '^lib/' || true
 }
 
 staged_test_files() {
-  staged_dart_files | grep '^test/' || true
+	staged_dart_files | grep '^test/' || true
 }
 
 any_lib_changed() {
-  [ -n "$(staged_lib_files)" ]
+	[ -n "$(staged_lib_files)" ]
 }
 
 # ── Convention Commits regex ─────────────────────────────────
