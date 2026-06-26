@@ -27,6 +27,12 @@ windows/flutter/ephemeral/
 .idea/
 .vscode/
 *.iml
+# Allow example launch configs
+!examples/flutter_serial_monitor/.vscode/
+!examples/flutter_serial_monitor/.vscode/launch.json
+!examples/flutter_serial_monitor/.idea/
+!examples/flutter_serial_monitor/.idea/runConfigurations/
+!examples/flutter_serial_monitor/.idea/runConfigurations/*.xml
 
 # OS junk
 .DS_Store
@@ -42,3 +48,10 @@ Thumbs.db
 # Local agent/runtime artifacts
 .crew/
 .pi/
+
+/.crew/
+/.crew
+!.crew/artifacts/
+!.crew/graphs/
+!.crew/artifacts/.gitkeep
+!.crew/graphs/.gitkeep

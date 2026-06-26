@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+# ============================================================
+#  🚀 setup-devenv — platform_serial Linux development setup
+#  Idempotent: safe to run multiple times; skips already-installed tools.
+#  Installs: Git, Flutter, Android Studio, Docker Desktop,
+#            Oh My Posh (M365Princess theme).
+# ============================================================
+set -euo pipefail
+
+YES=0
+DRY_RUN=0
+SKIP_ANDROID_STUDIO=0
+SKIP_DOCKER=0
+SKIP_OH_MY_POSH=0
+FLUTTER_DIR="${HOME}/development/flutter"
+
+bold='\033[1m'; green='\033[32m'; yellow='\033[33m'
+red='\033[31m'; cyan='\033[36m'; reset='\033[0m'
+
+usage() {
+  cat <<'EOF'
+🚀 setup-devenv — idempotent Linux development environment setup
+
+Synopsis:
+  scripts/linux/setup/setup-devenv [options]
+
+Options:
+  -y, --yes                 Run without interactive confirmations.
+      --dry-run             Print actions without changing the system.
+      --flutter-dir PATH    Flutter SDK location (default: ~/development/flutter).
+      --skip-android-studio Do not install Android Studio.
+      --skip-docker         Do not install Docker Desktop.
+      --skip-oh-my-posh     Do not install or configure Oh My Posh.
+  -h, --help                Show this help.
+
+Installs / verifies:
+  ✔  Git
+  ✔  Flutter SDK
+  ✔  Android Studio (--skip-android-studio to skip)
+  ✔  Docker Desktop for Linux (--skip-docker to skip)
+  ✔  Oh My Posh with M365Princess theme (--skip-oh-my-posh to skip)
+
+Examples:
+  scripts/linux/setup/setup-devenv --yes
+  scripts/linux/setup/setup-devenv --dry-run
+  scripts/linux/setup/setup-devenv --skip-docker --skip-android-studio
+EOF
+}
+
+log()  { printf "%b  %s%b\n" "$cyan"   "$1" "$reset"; }
+ok()   { printf "%b✅  %s%b\n" "$green"  "$1" "$reset"; }
+warn() { printf "%b⚠️   %s%b\n" "$yellow" "$1" "$reset"; }
+fail() { printf "%b❌  %s%b\n" "$red"   "$1" "$reset"; exit 1; }
+run()  { if [[ "$DRY_RUN" == 1 ]]; then warn "dry-run: $*"; else eval "$@"; fi; }
+have() { command -v "$1" >/dev/null 2>&1; }
+sudo_prefix() { [[ "${EUID}" == 0 ]] && printf '' || printf 'sudo '; }
+
+require_elevation() {
+  local action="$1"
+  if [[ "$DRY_RUN" == 1 ]]; then warn "dry-run: root/sudo required for $action"; return 0; fi
+  if [[ "${EUID}" == 0 ]]; then return 0; fi
+  have sudo || fail "sudo required for $action. Install manually or re-run with sudo."
+  sudo -v || fail "Cannot obtain sudo credentials for $action."
+}
+
+confirm() {
+  [[ "$YES" == 1 ]] && return 0
+  read -r -p "$1 [y/N] " reply
+  [[ "$reply" =~ ^[Yy]$ ]]
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -y|--yes)               YES=1 ;;
+    --dry-run)              DRY_RUN=1 ;;
+    --flutter-dir)          FLUTTER_DIR="$2"; shift ;;
+    --skip-android-studio)  SKIP_ANDROID_STUDIO=1 ;;
+    --skip-docker)          SKIP_DOCKER=1 ;;
+    --skip-oh-my-posh)      SKIP_OH_MY_POSH=1 ;;
+    -h|--help)              usage; exit 0 ;;
+    *)                      fail "Unknown option: $1" ;;
+  esac
+  shift
+done
+
+[[ "${EUID}" == 0 && "$DRY_RUN" == 0 ]] && \
+  fail "Do not run as root. Run as normal user; sudo is requested only for package-manager actions."
+
+install_pkg() {
+  local pkg="$1"
+  if have apt-get; then
+    require_elevation "install $pkg (apt)"
+    run "$(sudo_prefix)apt-get update -qq && $(sudo_prefix)apt-get install -y $pkg"
+  elif have dnf; then
+    require_elevation "install $pkg (dnf)"
+    run "$(sudo_prefix)dnf install -y $pkg"
+  elif have pacman; then
+    require_elevation "install $pkg (pacman)"
+    run "$(sudo_prefix)pacman -Sy --noconfirm $pkg"
+  else
+    warn "No supported package manager. Install $pkg manually."
+  fi
+}
+
+printf "%b%s%b\n" "$bold" "🚀 platform_serial Linux development environment setup" "$reset"
+echo ""
+
+# ── Git ─────────────────────────────────────────────────────
+if have git; then
+  ok "Git: $(git --version)"
+else
+  log "📦 Installing Git..."
+  install_pkg git
+fi
+
+# ── Flutter ─────────────────────────────────────────────────
+if [[ -x "${FLUTTER_DIR}/bin/flutter" ]]; then
+  ok "Flutter: $("${FLUTTER_DIR}/bin/flutter" --version --machine 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('frameworkVersion','?'))" 2>/dev/null || echo 'installed')"
+elif confirm "Install Flutter SDK into ${FLUTTER_DIR}?"; then
+  run "mkdir -p '$(dirname "${FLUTTER_DIR}")'"
+  run "git clone https://github.com/flutter/flutter.git -b stable '${FLUTTER_DIR}'"
+fi
+case ":${PATH}:" in
+  *":${FLUTTER_DIR}/bin:"*) ok "Flutter is on PATH" ;;
+  *) warn "Add to PATH: export PATH=\"${FLUTTER_DIR}/bin:\$PATH\"" ;;
+esac
+
+# ── Android Studio ───────────────────────────────────────────
+if [[ "$SKIP_ANDROID_STUDIO" == 0 ]]; then
+  if have studio || [[ -d /opt/android-studio ]]; then
+    ok "Android Studio: already installed"
+  elif have snap && confirm "Install Android Studio via snap?"; then
+    require_elevation "install Android Studio (snap)"
+    run "$(sudo_prefix)snap install android-studio --classic"
+  else
+    warn "Install Android Studio manually: https://developer.android.com/studio"
+  fi
+fi
+
+# ── Docker Desktop ───────────────────────────────────────────
+if [[ "$SKIP_DOCKER" == 0 ]]; then
+  if have docker && docker info >/dev/null 2>&1; then
+    ok "Docker: $(docker --version)"
+  elif have docker; then
+    warn "Docker is installed but not running. Start Docker Desktop or the daemon."
+  else
+    log "🐳 Installing Docker Desktop for Linux..."
+    if have apt-get; then
+      # Official Docker apt repository
+      require_elevation "install Docker prerequisites"
+      run "$(sudo_prefix)apt-get update -qq"
+      run "$(sudo_prefix)apt-get install -y ca-certificates curl gnupg lsb-release"
+      run "$(sudo_prefix)install -m 0755 -d /etc/apt/keyrings"
+      run "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | $(sudo_prefix)gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
+      run "$(sudo_prefix)chmod a+r /etc/apt/keyrings/docker.gpg"
+      run "echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable\" | $(sudo_prefix)tee /etc/apt/sources.list.d/docker.list > /dev/null"
+      run "$(sudo_prefix)apt-get update -qq"
+      run "$(sudo_prefix)apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
+      # Add user to docker group
+      run "$(sudo_prefix)usermod -aG docker '${USER}'"
+      warn "Log out and back in (or run: newgrp docker) for group membership to take effect."
+      ok "Docker Engine installed. For Docker Desktop GUI: https://docs.docker.com/desktop/linux/"
+    else
+      warn "Install Docker Desktop manually: https://docs.docker.com/desktop/linux/install/"
+    fi
+  fi
+fi
+
+# ── Oh My Posh ───────────────────────────────────────────────
+if [[ "$SKIP_OH_MY_POSH" == 0 ]]; then
+  if have oh-my-posh; then
+    ok "Oh My Posh: $(oh-my-posh version 2>/dev/null || echo 'installed')"
+  else
+    log "🎨 Installing Oh My Posh..."
+    run "curl -s https://ohmyposh.dev/install.sh | bash -s"
+  fi
+  run "mkdir -p '${HOME}/.poshthemes'"
+  THEME="${HOME}/.poshthemes/M365Princess.omp.json"
+  if [[ ! -f "$THEME" ]]; then
+    log "📥 Downloading M365Princess theme..."
+    run "curl -fsSL -o '${THEME}' https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/M365Princess.omp.json"
+  fi
+  for rc in "${HOME}/.bashrc" "${HOME}/.zshrc"; do
+    marker="# platform_serial oh-my-posh"
+    if [[ -f "$rc" ]] && grep -Fq "$marker" "$rc"; then
+      ok "Oh My Posh configured in $rc"
+    elif [[ -f "$rc" ]]; then
+      shell_name="$(basename "$rc" | sed 's/^\.//')"
+      run "printf '\n%s\neval \"\$(oh-my-posh init %s --config %s)\"\n' '${marker}' '${shell_name}' '${THEME}' >> '${rc}'"
+    fi
+  done
+fi
+
+# ── Flutter doctor ───────────────────────────────────────────
+echo ""
+if [[ -x "${FLUTTER_DIR}/bin/flutter" ]]; then
+  run "'${FLUTTER_DIR}/bin/flutter' doctor"
+fi
+
+echo ""
+ok "Linux development environment setup complete!"
+echo ""
+echo "  Next steps:"
+echo "    flutter pub get"
+echo "    flutter analyze --fatal-infos --fatal-warnings"
+echo "    flutter test --coverage"
+echo "    scripts/linux/commands/build     ← Docker build"
+echo "    scripts/linux/commands/test      ← Docker test"
+echo "    scripts/linux/commands/security  ← Docker security scan"

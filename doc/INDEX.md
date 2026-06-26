@@ -45,21 +45,42 @@
    - Copilot agents, skills, MCP and repository instructions
    - Cross-platform developer setup scripts
 
+6. **[WEB_WASM.md](./WEB_WASM.md)** - Web & WASM Guide
+   - Browser requirements (Chrome/Edge 89+)
+   - Conditional import pattern (`dart.library.js_interop`)
+   - Web Serial API flow diagram
+   - Limitation comparison table (native vs web)
+   - Build commands (JS and WASM)
+   - VS Code & IntelliJ launch configurations
+
+7. **[HOOKS.md](./HOOKS.md)** - Git Hooks & CI Quality Gates
+   - Hook installation (Linux/macOS/Windows)
+   - `post-checkout` quality gate on branch creation
+   - `pre-commit` analyze + test alignment + CHANGELOG check
+   - `pre-push` full test suite + coverage + push guard
+   - `commit-msg` Conventional Commits validation
+   - CI pipeline jobs and merge requirements
+   - Bypass guide for emergency situations
+
 ### Quick Navigation by Task
 
 #### For Understanding the Implementation
+
 → Start with: **IMPLEMENTATION_SUMMARY.md** (5 min read)
 → Then read: **PLATFORM_ARCHITECTURE.md** (30 min deep dive)
 
 #### For Building & Deploying
+
 → Start with: **NATIVE_IMPLEMENTATIONS.md** (Build section)
 → Use: **IMPLEMENTATION_CHECKLIST.md** (Deployment section)
 
 #### For Troubleshooting
+
 → Refer to: **PLATFORM_ARCHITECTURE.md** (Debugging section)
 → Check: **NATIVE_IMPLEMENTATIONS.md** (Known Limitations)
 
 #### For Integration
+
 → Read: **IMPLEMENTATION_SUMMARY.md** (API Surface)
 → Implement using: **PLATFORM_ARCHITECTURE.md** (Integration Points)
 
@@ -107,6 +128,7 @@ The repository now has an explicit 100% line-coverage gate for the configured LC
 ### Native Source Code (26 files)
 
 **Windows (7 files):**
+
 ```
 platform_serial_plugin.{h,cpp}      - FFI plugin entry
 serial_port.{h,cpp}                - Port implementation
@@ -115,6 +137,7 @@ CMakeLists.txt                     - Build configuration
 ```
 
 **Linux (7 files):**
+
 ```
 platform_serial_plugin.{h,cc}       - FFI plugin entry
 serial_port.{h,c}                  - Port implementation
@@ -123,12 +146,14 @@ CMakeLists.txt                     - Build configuration
 ```
 
 **macOS (2 files):**
+
 ```
 serial_port_manager.{h,mm}         - Obj-C++ implementation
 platform_serial.podspec             - CocoaPods specification
 ```
 
 **Android (5 files):**
+
 ```
 FlutterSerialPlugin.kt             - Plugin entry
 SerialPortManager.kt               - Port management
@@ -139,6 +164,7 @@ UsbSerialPort.kt                   - USB implementation
 ```
 
 **iOS (5 files):**
+
 ```
 FlutterSerialPlugin.swift          - Plugin entry
 SerialPortManager.swift            - Port management
@@ -173,17 +199,20 @@ PLATFORM_ARCHITECTURE.md           - Architecture details (~18 KB)
 ## 🚀 Quick Start
 
 ### 1. Verify Build Files
+
 ```bash
 cd packages/platform_serial
 ls -la windows/ linux/ macos/ android/ ios/
 ```
 
 ### 2. Run Tests
+
 ```bash
 flutter test test/unit/
 ```
 
 ### 3. Build Platforms
+
 ```bash
 flutter build windows --verbose
 flutter build linux --verbose
@@ -193,6 +222,7 @@ flutter build ios --debug
 ```
 
 ### 4. Deploy & Test
+
 - Windows: Test with COM ports / USB adapters
 - Linux: Test with /dev/ttyUSB* devices
 - macOS: Test with USB serial adapters
@@ -204,6 +234,7 @@ flutter build ios --debug
 ## 📊 Project Metrics
 
 ### Code Statistics
+
 - **Total Files:** 26 native implementation files
 - **Total Lines:** ~8,000 lines of native code
 - **Total Size:** ~225 KB (uncompressed)
@@ -211,6 +242,7 @@ flutter build ios --debug
 - **Documentation:** ~52 KB (4 comprehensive guides)
 
 ### Build System
+
 - **Windows:** CMake 3.14+ with MSVC
 - **Linux:** CMake 3.10+ with GCC/Clang
 - **macOS:** CocoaPods with Xcode
@@ -218,6 +250,7 @@ flutter build ios --debug
 - **iOS:** CocoaPods with Swift
 
 ### Dependencies
+
 - **Windows:** setupapi.lib (Windows SDK)
 - **Linux:** POSIX libc, pthreads
 - **macOS:** IOKit, Foundation frameworks
@@ -225,6 +258,7 @@ flutter build ios --debug
 - **iOS:** Network, Foundation frameworks
 
 ### Testing
+
 - **Test Framework:** Flutter testing framework
 - **Test Count:** 64 unit/integration tests
 - **Coverage:** Core functionality
@@ -235,6 +269,7 @@ flutter build ios --debug
 ## 🔒 Security & Quality
 
 ### Code Quality
+
 ✅ Comprehensive error handling
 ✅ Memory leak prevention (verified)
 ✅ Buffer overflow protection
@@ -243,6 +278,7 @@ flutter build ios --debug
 ✅ Thread-safe operations
 
 ### Security Features
+
 ✅ Permission validation (Android USB)
 ✅ Safe string handling
 ✅ Input validation & bounds checking
@@ -250,6 +286,7 @@ flutter build ios --debug
 ✅ Proper authentication/encryption support
 
 ### Production Readiness
+
 ✅ Error handling with descriptive messages
 ✅ Resource lifecycle management
 ✅ Performance optimization
@@ -364,18 +401,21 @@ flutter pub publish
 ## 🎓 Learning Path
 
 ### For Beginners
+
 1. Read: IMPLEMENTATION_SUMMARY.md
 2. Understand: Architecture overview in PLATFORM_ARCHITECTURE.md
 3. Build: Follow build instructions
 4. Test: Run test suite
 
 ### For Intermediate Users
+
 1. Study: Implementation details per platform
 2. Explore: Platform-specific optimizations
 3. Modify: Add custom features
 4. Deploy: Set up CI/CD
 
 ### For Advanced Users
+
 1. Deep dive: NATIVE_IMPLEMENTATIONS.md technical details
 2. Optimize: Performance tuning per platform
 3. Extend: Add platform-specific features
@@ -466,6 +506,7 @@ This package is **production-ready** and includes:
 ✅ Error handling & recovery
 
 ### Next Action
+
 → Review NATIVE_IMPLEMENTATIONS.md for platform-specific build instructions
 → Follow IMPLEMENTATION_CHECKLIST.md for deployment procedure
 

@@ -9,6 +9,11 @@ coverage/
 .idea/
 .vscode/
 
+# Examples directory — excluded from the published pub package.
+# Pub convention is example/ (singular); this repo uses examples/<name>/
+# for clarity but the plugin itself has no runtime dependency on examples.
+examples/
+
 # Generated example build outputs
 example/.dart_tool/
 example/build/

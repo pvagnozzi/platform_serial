@@ -1,23 +1,31 @@
 name: Continuous Quality Gate
 
+# ── Triggers ──────────────────────────────────────────────────
+# Runs on EVERY pull request regardless of the target branch.
+# Also runs on direct pushes to integration branches.
 on:
   pull_request:
-    branches: [main, develop, dev]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: [develop, dev]
+    branches: [main, develop, dev]
   workflow_dispatch:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ── Jobs ──────────────────────────────────────────────────────
 jobs:
+  # ── 1. Dart analysis + pub dry-run ─────────────────────────
   analyze:
-    name: Analyze package and example
+    name: 📊 Analyze & Validate
     runs-on: ubuntu-latest
+    # Skip draft PRs to save CI minutes — remove if you want eager feedback
+    if: github.event.pull_request.draft != true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,23 +40,25 @@ jobs:
       - name: Resolve root dependencies
         run: flutter pub get
 
-      - name: Resolve example dependencies
-        run: flutter pub get
-        working-directory: example
-
       - name: Analyze root package
         run: flutter analyze --fatal-infos --fatal-warnings
 
-      - name: Analyze example package
+      - name: Resolve example dependencies
+        run: flutter pub get
+        working-directory: examples/flutter_serial_monitor
+
+      - name: Analyze flutter_serial_monitor example
         run: flutter analyze --fatal-infos --fatal-warnings
-        working-directory: example
+        working-directory: examples/flutter_serial_monitor
 
       - name: Validate pub.dev package metadata
         run: flutter pub publish --dry-run
 
+  # ── 2. Tests + 100% coverage gate ──────────────────────────
   test:
-    name: Tests and coverage
+    name: 🧪 Tests & Coverage
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft != true
     needs: analyze
     steps:
       - uses: actions/checkout@v4
@@ -67,17 +77,21 @@ jobs:
       - name: Run all tests with coverage
         run: flutter test --coverage
 
-      - name: Enforce 100% line coverage on coverage scope
-        run: dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100
+      - name: Enforce 100% line coverage
+        run: >
+          dart run tool/coverage_gate.dart
+          --lcov coverage/lcov.info
+          --min-lines 100
 
-      - name: Upload coverage artifact
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: lcov-report
+          name: lcov-report-${{ github.run_id }}
           path: coverage/lcov.info
+          retention-days: 7
 
-      - name: Upload coverage to Codecov
+      - name: Upload to Codecov
         uses: codecov/codecov-action@v4
         if: always()
         with:
@@ -87,9 +101,57 @@ jobs:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  example-smoke:
-    name: Example smoke test
+  # ── 3. Commit message convention check ─────────────────────
+  commit-convention:
+    name: 📝 Commit Conventions
     runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft != true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit messages (Conventional Commits)
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          TYPES='feat|fix|docs|test|chore|refactor|style|ci|build|perf|revert|release'
+          SCOPE='(\([a-z0-9_/-]+\))?'
+          CC_PATTERN="^(${TYPES})${SCOPE}(!)?: .{1,100}$"
+          MERGE_PATTERN='^Merge (branch|pull request|remote)'
+          REVERT_PATTERN='^Revert "'
+          # Use merge-base so we only check commits that are NEW in
+          # this PR, not old commits from the target branch history.
+          MERGE_BASE=$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")
+          FAILED=0
+          while IFS= read -r msg; do
+            [ -z "$msg" ] && continue
+            if echo "$msg" | grep -qP "$MERGE_PATTERN"; then continue; fi
+            if echo "$msg" | grep -qP "$REVERT_PATTERN"; then continue; fi
+            if ! echo "$msg" | grep -qP "$CC_PATTERN"; then
+              echo "❌ Invalid: $msg"
+              FAILED=1
+            else
+              echo "✅ $msg"
+            fi
+          done < <(git log --format='%s' "${MERGE_BASE}..${HEAD_SHA}")
+          if [ "$FAILED" -ne 0 ]; then
+            echo ""
+            echo "Expected: <type>(<scope>): <description>"
+            echo "Types: ${TYPES}"
+            exit 1
+          fi
+          echo "✅ All commit messages follow Conventional Commits"
+
+  # ── 4. Example smoke test + Linux build ─────────────────────
+  example-smoke:
+    name: 🔬 Example Smoke Test
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft != true
     needs: analyze
     steps:
       - uses: actions/checkout@v4
@@ -102,30 +164,76 @@ jobs:
 
       - name: Resolve example dependencies
         run: flutter pub get
-        working-directory: example
+        working-directory: examples/flutter_serial_monitor
 
       - name: Run example widget tests
         run: flutter test
-        working-directory: example
+        working-directory: examples/flutter_serial_monitor
 
-      - name: Build Linux example when toolchain is available
+      - name: Install Linux desktop toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev
           flutter config --enable-linux-desktop
-          flutter build linux --debug
-        working-directory: example
 
-  pr-status:
-    name: PR Status Check
+      - name: Build Linux example (smoke)
+        run: flutter build linux --debug
+        working-directory: examples/flutter_serial_monitor
+
+  # ── 5. Docker Compose file validation ──────────────────────
+  docker-validate:
+    name: 🐳 Docker Compose Validation
     runs-on: ubuntu-latest
-    needs: [analyze, test, example-smoke]
+    if: github.event.pull_request.draft != true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml syntax
+        run: docker compose -f containers/docker-compose.yml config --quiet
+
+      - name: Lint Dockerfiles (hadolint)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
+          ignore: DL3008,DL3009,DL3015
+          # DL3008/DL3009/DL3015: apt pin versions (acceptable in CI images)
+          failure-threshold: error
+
+  # ── 6. PR gate aggregator (required status check) ──────────
+  pr-status:
+    name: ✅ PR Status Check
+    runs-on: ubuntu-latest
+    needs:
+      - analyze
+      - test
+      - commit-convention
+      - example-smoke
+      - docker-validate
     if: always()
     steps:
-      - name: Check job statuses
+      - name: Aggregate job results
+        shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ needs.analyze.result }}" != "success" ]; then echo "❌ Analyze failed"; exit 1; fi
-          if [ "${{ needs.test.result }}" != "success" ]; then echo "❌ Tests failed"; exit 1; fi
-          if [ "${{ needs.example-smoke.result }}" != "success" ]; then echo "❌ Example smoke test failed"; exit 1; fi
-          echo "✅ Continuous quality gate passed"
+          FAILED=0
+          check() {
+            local name="$1" result="$2"
+            case "$result" in
+              success)  echo "✅ $name" ;;
+              skipped)  echo "⏭️  $name (skipped — draft PR)" ;;
+              *)        echo "❌ $name: $result"; FAILED=1 ;;
+            esac
+          }
+          check "Analyze & Validate"    "${{ needs.analyze.result }}"
+          check "Tests & Coverage"      "${{ needs.test.result }}"
+          check "Commit Conventions"    "${{ needs.commit-convention.result }}"
+          check "Example Smoke Test"    "${{ needs.example-smoke.result }}"
+          check "Docker Validation"     "${{ needs.docker-validate.result }}"
+          echo ""
+          if [ "$FAILED" -ne 0 ]; then
+            echo "❌ Continuous quality gate FAILED — merge is blocked."
+            exit 1
+          fi
+          echo "✅ Continuous quality gate PASSED — PR is mergeable."

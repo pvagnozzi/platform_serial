@@ -8,16 +8,25 @@ This repository is a Flutter plugin for serial communication across Windows, Lin
 2. Before editing, identify whether the change touches Dart API, native platform code, CI/release automation, or documentation.
 3. Keep public Dart APIs documented with `///` comments and preserve typed `SerialError` failures.
 4. Run the smallest targeted test first, then the full quality gate before handoff:
+
    ```bash
    flutter pub get
    flutter analyze --fatal-infos --fatal-warnings
    flutter test --coverage
    dart run tool/coverage_gate.dart --lcov coverage/lcov.info --min-lines 100
    ```
+
 5. For release changes, also run:
+
    ```bash
    flutter pub publish --dry-run
    ```
+
+6. Use [Conventional Commits](https://conventionalcommits.org) for all commit messages:
+   `<type>(<scope>): <description>` where type is one of
+   `feat|fix|docs|test|chore|refactor|style|ci|build|perf|revert`.
+7. Install git hooks on first setup: `.githooks/install.sh` (Linux/macOS)
+   or `.githooks\install.ps1` (Windows). See `doc/HOOKS.md`.
 
 ## Architecture guardrails
 

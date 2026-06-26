@@ -1,0 +1,108 @@
+# ============================================================
+#  platform_serial — Docker Compose for CI / local runs
+#
+#  Services:
+#    base       – Build the shared base image
+#    builder    – Flutter web build
+#    test       – flutter test + coverage gate
+#    analyze    – flutter analyze + pub dry-run
+#    security   – trivy + osv-scanner
+#    devcontainer – full dev environment
+#
+#  Usage:
+#    docker compose build base           # build base first
+#    docker compose run --rm test        # run tests
+#    docker compose run --rm analyze     # run analysis
+#    docker compose run --rm security    # run security scan
+# ============================================================
+name: platform-serial
+
+x-base-service: &base-service
+  build:
+    context: ..
+    dockerfile: containers/base/Dockerfile
+  image: platform_serial-base:latest
+
+services:
+  base:
+    <<: *base-service
+    command: ["flutter", "doctor"]
+
+  builder:
+    build:
+      context: ..
+      dockerfile: containers/builder/Dockerfile
+      target: builder # select the runtime stage (not web-js/web-wasm/pubdry)
+      args:
+        BASE_IMAGE: platform_serial-base:latest
+    image: platform_serial-builder:latest
+    depends_on:
+      - base
+    environment:
+      BUILD_TARGET: ${BUILD_TARGET:-web-js}
+    volumes:
+      - ../examples/flutter_serial_monitor/build/web:/workspace/examples/flutter_serial_monitor/build/web
+
+  test:
+    build:
+      context: ..
+      dockerfile: containers/test/Dockerfile
+      args:
+        BASE_IMAGE: platform_serial-base:latest
+    image: platform_serial-test:latest
+    depends_on:
+      - base
+    environment:
+      MIN_COVERAGE: ${MIN_COVERAGE:-100}
+    volumes:
+      - ../coverage:/workspace/coverage
+
+  analyze:
+    build:
+      context: ..
+      dockerfile: containers/analyze/Dockerfile
+      args:
+        BASE_IMAGE: platform_serial-base:latest
+    image: platform_serial-analyze:latest
+    depends_on:
+      - base
+    environment:
+      ANALYZE_FLAGS: ${ANALYZE_FLAGS:---fatal-infos --fatal-warnings}
+
+  security:
+    build:
+      context: ..
+      dockerfile: containers/security/Dockerfile
+      args:
+        BASE_IMAGE: platform_serial-base:latest
+    image: platform_serial-security:latest
+    depends_on:
+      - base
+    environment:
+      FAIL_ON_HIGH: ${FAIL_ON_HIGH:-true}
+    volumes:
+      - security-reports:/workspace/security-reports
+
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: containers/devcontainer/Dockerfile
+      args:
+        BASE_IMAGE: platform_serial-base:latest
+        FLUTTER_VERSION: stable # devcontainer uses same channel as base
+        USERNAME: vscode
+        USER_UID: "1000"
+        USER_GID: "1000"
+    image: platform_serial-devcontainer:latest
+    volumes:
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    command: ["/bin/bash"]
+    stdin_open: true
+    tty: true
+
+volumes:
+  security-reports:

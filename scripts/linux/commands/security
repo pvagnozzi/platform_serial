@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# ============================================================
+#  🔒 security — platform_serial Docker Security Scan
+#  Runs Trivy filesystem scan, Trivy config scan, OSV-Scanner,
+#  and dart pub outdated. Reports are saved to ./security-reports/.
+#  With --force, both base and security images are rebuilt first.
+# ============================================================
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+COMPOSE_FILE="${REPO_ROOT}/containers/docker-compose.yml"
+
+bold='\033[1m'; green='\033[32m'; yellow='\033[33m'; red='\033[31m'; cyan='\033[36m'; reset='\033[0m'
+log()  { printf "%b%s%b\n" "$cyan"   "  $1" "$reset"; }
+ok()   { printf "%b✅  %s%b\n" "$green"  "$1" "$reset"; }
+warn() { printf "%b⚠️   %s%b\n" "$yellow" "$1" "$reset"; }
+fail() { printf "%b❌  %s%b\n" "$red"   "$1" "$reset"; exit 1; }
+run()  { if [[ "$DRY_RUN" == 1 ]]; then warn "dry-run: $*"; else eval "$@"; fi; }
+
+DRY_RUN=0; FORCE=0; FAIL_ON_HIGH="true"; NO_CACHE=""
+
+usage() {
+  cat <<'EOF'
+🔒 security — Run the platform_serial vulnerability scan container
+
+Synopsis:
+  scripts/linux/commands/security [options]
+
+Options:
+      --dry-run    Print actions without executing them.
+      --force      Force rebuild of Docker images (--no-cache).
+      --no-fail    Do not exit with error on HIGH/CRITICAL findings.
+  -h, --help       Show this help.
+
+Produces:
+  security-reports/trivy-fs.json      Trivy filesystem scan
+  security-reports/trivy-config.json  Trivy config/IaC scan
+  security-reports/osv-scan.json      OSV-Scanner dependency audit
+  security-reports/pub-outdated.json  dart pub outdated
+
+Examples:
+  scripts/linux/commands/security              # full scan, fail on HIGH/CRITICAL
+  scripts/linux/commands/security --no-fail    # report only, do not fail CI
+  scripts/linux/commands/security --force      # rebuild images, then scan
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)  DRY_RUN=1 ;;
+    --force)    FORCE=1; NO_CACHE="--no-cache" ;;
+    --no-fail)  FAIL_ON_HIGH="false" ;;
+    -h|--help)  usage; exit 0 ;;
+    *)          fail "Unknown option: $1" ;;
+  esac
+  shift
+done
+
+printf "%b%s%b\n" "$bold" "🔒 platform_serial — Security Scan" "$reset"
+
+command -v docker >/dev/null 2>&1 || fail "Docker not found. Install Docker Desktop first."
+
+log "📦 Building base image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} base"
+
+log "📦 Building security image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} security"
+
+log "🔒 Running security container..."
+run "FAIL_ON_HIGH=${FAIL_ON_HIGH} docker compose -f '${COMPOSE_FILE}' run --rm security"
+
+ok "Security scan complete — check security-reports/ for detailed findings"

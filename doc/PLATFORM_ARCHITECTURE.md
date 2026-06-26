@@ -75,12 +75,14 @@ The platform_serial package provides a unified cross-platform API for serial por
 ### Key Components
 
 **SerialPortManager**
+
 - Enumerates COM ports via:
   - Registry: `HKEY_LOCAL_MACHINE\HARDWARE\DEVICEMAP\SERIALCOMM`
   - SetupAPI: `SetupDiGetClassDevs()` for USB devices
 - Returns structured port information (name, description, manufacturer)
 
 **SerialPort**
+
 - Wraps Windows HANDLE
 - Configures via `DCB` structure (baud rate, parity, flow control)
 - Sets timeouts via `COMMTIMEOUTS` structure
@@ -142,6 +144,7 @@ ERROR_TIMEOUT (1460)            -> I/O timeout
 ### Key Components
 
 **SerialPortManager**
+
 - Enumerates ports from:
   - `/dev/ttyS*` - Standard serial ports
   - `/dev/ttyUSB*` - USB serial adapters
@@ -149,6 +152,7 @@ ERROR_TIMEOUT (1460)            -> I/O timeout
 - Reads metadata from `/sys/class/tty/` and `/proc/tty/driver/`
 
 **SerialPort**
+
 - Wraps file descriptor
 - Uses `termios` for configuration
 - Non-blocking I/O with `select()`/`poll()`
@@ -212,6 +216,7 @@ ETIMEDOUT (110)    -> Operation timeout
 ### Key Components
 
 **SerialPortManager (Objective-C++)**
+
 - Uses IOKit for port enumeration:
   - `IOServiceMatching()` for serial devices
   - Extracts `kIOTTYDeviceKey` (device path)
@@ -219,6 +224,7 @@ ETIMEDOUT (110)    -> Operation timeout
 - Falls back to `/dev` enumeration as fallback
 
 **SerialPort**
+
 - Similar to Linux implementation
 - Uses `select()` or `kqueue()` for I/O
 - termios for configuration
@@ -276,22 +282,26 @@ Usage:       High-throughput scenarios use kqueue
 ### Key Components
 
 **FlutterSerialPlugin**
+
 - Entry point for all Flutter method calls
 - Manages MethodChannel and EventChannel
 - Coordinates USB receiver and port manager
 
 **SerialPortManager**
+
 - Enumerates USB devices via `UsbManager.getDeviceList()`
 - Manages port lifecycle (open/close/reopen)
 - Thread-safe concurrent map for port tracking
 - Emits events via EventChannel
 
 **SerialPort**
+
 - Wraps USB connection and endpoints
 - Manages buffered read/write operations
 - Implements coroutine-based async I/O
 
 **UsbSerialDriver/UsbSerialPort**
+
 - Provides abstraction over usb-serial-for-android
 - Supports FTDI, Prolific, CP210x chipsets
 
@@ -367,21 +377,25 @@ pluginScope.launch {
 ### Key Components
 
 **FlutterSerialPlugin**
+
 - Entry point for all Flutter method calls
 - Manages MethodChannel and EventChannel
 - Swift concurrency integration
 
 **SerialPortManager**
+
 - Device enumeration (real) or mocks (simulator)
 - Port lifecycle management
 - Thread safety with DispatchQueue
 
 **SerialPort**
+
 - Wraps Network.Connection
 - Async/await for I/O operations
 - Handles connection state transitions
 
 **UsbSerialDriver**
+
 - Provides USB communication via Network framework
 - Implements async send/receive
 
@@ -619,6 +633,7 @@ Dart consumes via:
 ## Debugging & Troubleshooting
 
 ### Windows
+
 ```powershell
 # List COM ports
 Get-PnpDevice -PresentOnly | Where-Object {$_.InstanceId -match 'COM'}
@@ -628,6 +643,7 @@ devmgmt.msc
 ```
 
 ### Linux
+
 ```bash
 # List serial ports
 ls -la /dev/tty*
@@ -638,6 +654,7 @@ sudo usermod -a -G dialout $USER
 ```
 
 ### macOS
+
 ```bash
 # List serial ports
 ls /dev/tty.* /dev/cu.*
@@ -647,12 +664,14 @@ ioreg -r -k "IOTTYDevice"
 ```
 
 ### Android
+
 ```
 adb logcat com.xauron.platform_serial
 # Check for USB permission logs
 ```
 
 ### iOS
+
 ```
 # Console.app -> device logs
 # Check for USB connection errors
@@ -660,6 +679,59 @@ adb logcat com.xauron.platform_serial
 
 ---
 
-**Last Updated:** 2026-06-11
-**Architecture Version:** 1.0
-**Compatibility:** Flutter 3.10+, Dart 3.0+
+## Web & WASM
+
+### Conditional import (WASM-compatible)
+
+The platform factory selector uses `dart.library.js_interop` — **not** the
+deprecated `dart.library.html` — so the same source tree compiles to both
+Flutter Web (JS) and Flutter Web (WASM):
+
+```dart
+// lib/src/platform/serial_platform_interface.dart
+import 'serial_platform_factory_stub.dart'
+    if (dart.library.js_interop) 'serial_platform_factory_web.dart'
+    if (dart.library.io)         'serial_platform_factory_io.dart';
+```
+
+### Web Serial API flow
+
+```mermaid
+sequenceDiagram
+    participant App  as Flutter App
+    participant WI   as WebSerialImpl
+    participant Br   as Browser
+    participant Dev  as Serial Device
+
+    App->>WI: openPort(config)
+    WI->>Br: navigator.serial.requestPort()
+    Br-->>App: \U0001F512 browser port picker
+    App->>Br: user selects device
+    Br-->>WI: SerialPort JS object
+    WI->>Br: port.open({ baudRate, … })
+    WI->>Br: port.readable.getReader()
+    loop Read loop
+        Br-->>WI: Uint8Array chunk
+        WI-->>App: StreamController.add(data)
+    end
+    App->>WI: closePort(portName)
+    WI->>Br: reader.cancel() + port.close()
+```
+
+### Platform limitations on Web
+
+| Feature | Native | Web |
+|---------|--------|-----|
+| List available ports | ✅ | ⚠\uFE0F returns only previously-granted ports |
+| Open port | ✅ | ✅ via `requestPort()` (user gesture required) |
+| Read / Write | ✅ | ✅ |
+| Control signals (DTR, RTS…) | ✅ | ❌ throws `platformUnavailable` |
+| Flow control XON/XOFF | ✅ | ⚠\uFE0F mapped to `hardware` |
+| Stop bits 1.5 | ✅ | ⚠\uFE0F mapped to `1` |
+| Parity mark/space | ✅ | ⚠\uFE0F mapped to `none` |
+
+---
+
+**Last Updated:** 2026-06-25
+**Architecture Version:** 1.1
+**Compatibility:** Flutter 3.10+, Dart 3.4+
