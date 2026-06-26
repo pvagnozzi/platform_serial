@@ -44,7 +44,7 @@ hdr() { printf "\n%b%s%b\n" "$bold" "$1" "$reset"; }
 
 # ── Flutter detection ────────────────────────────────────────
 FLUTTER_BIN="$(command -v flutter 2>/dev/null || true)"
-DART_BIN="$(command -v dart 2>/dev/null || true)"
+# DART_BIN not used by hooks directly but may be useful if sourced externally
 
 require_flutter() {
 	if [ -z "$FLUTTER_BIN" ]; then
@@ -97,4 +97,5 @@ any_lib_changed() {
 }
 
 # ── Convention Commits regex ─────────────────────────────────
-CC_PATTERN='^(feat|fix|docs|test|chore|refactor|style|ci|build|perf|revert)(\([a-z0-9_/-]+\))?(!)?: .{1,100}$'
+# shellcheck disable=SC2034  # exported for sourcing scripts
+export CC_PATTERN='^(feat|fix|docs|test|chore|refactor|style|ci|build|perf|revert|release)(\([a-z0-9_/-]+\))?(!)?: .{1,100}$'
