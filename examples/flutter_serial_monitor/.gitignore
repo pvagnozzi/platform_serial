@@ -19,10 +19,12 @@ migrate_working_dir/
 *.ipr
 *.iws
 .idea/
+# Allow run configurations (tracked for developer convenience)
+!.idea/runConfigurations/
+!.idea/runConfigurations/*.xml
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code — launch.json is tracked for developer convenience
+# (uncomment the line below to ignore .vscode/ entirely)
 #.vscode/
 
 # Flutter/Dart/Pub related
