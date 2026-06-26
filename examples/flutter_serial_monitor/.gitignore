@@ -18,10 +18,18 @@ migrate_working_dir/
 *.iml
 *.ipr
 *.iws
-.idea/
-# Allow run configurations (tracked for developer convenience)
-!.idea/runConfigurations/
-!.idea/runConfigurations/*.xml
+# Ignore IntelliJ internal caches and generated files, but NOT
+# .idea/runConfigurations/ — those are tracked for developer convenience.
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/vcs.xml
+.idea/misc.xml
+.idea/markdown.xml
+.idea/dbnavigator.xml
+.idea/*.xml
+.idea/shelf/
 
 # VS Code — launch.json is tracked for developer convenience
 # (uncomment the line below to ignore .vscode/ entirely)
