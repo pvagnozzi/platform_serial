@@ -8,11 +8,23 @@ Use the platform-specific setup script:
 
 | Platform | Command |
 | --- | --- |
-| Windows | `./scripts/windows/setup-devenv.ps1 -Yes` |
-| Linux | `./scripts/linux/setup-devenv --yes` |
-| macOS | `./scripts/macos/setup-devenv --yes` |
+| Windows | `.\scripts\windows\setup\setup-devenv.ps1 -Yes` |
+| Linux | `scripts/linux/setup/setup-devenv --yes` |
+| macOS | `scripts/macos/setup/setup-devenv --yes` |
 
-Then run:
+Then install the git hooks (one-time setup):
+
+```bash
+# Linux / macOS
+.githooks/install.sh
+
+# Windows
+.githooks\install.ps1
+```
+
+The hooks enforce quality locally — see [doc/HOOKS.md](doc/HOOKS.md).
+
+Then run the quality gate:
 
 ```bash
 flutter pub get
@@ -49,8 +61,25 @@ Direct pushes to `main`, `develop`, and `dev` are not allowed. Repository admini
 
 ## Pull request checklist
 
-- [ ] Code is documented where it changes public behavior.
-- [ ] Tests cover the change and keep coverage at 100% for the configured coverage scope.
 - [ ] `flutter analyze --fatal-infos --fatal-warnings` passes.
+- [ ] `flutter test --coverage` passes with 100% line coverage.
+- [ ] Code is documented with `///` where it changes public behavior.
+- [ ] Tests cover the change and keep coverage at 100% for the configured scope.
+- [ ] `CHANGELOG.md` updated for user-facing changes.
 - [ ] `flutter pub publish --dry-run` passes for release-impacting changes.
-- [ ] Documentation is updated when user-facing behavior changes.
+- [ ] Documentation updated when user-facing behavior changes.
+- [ ] Commit messages follow [Conventional Commits](https://conventionalcommits.org).
+
+## PR pipeline
+
+Every PR triggers `.github/workflows/test-pr.yml` which runs:
+
+1. **`📊 Analyze & Validate`** — `flutter analyze` + `pub publish --dry-run`
+2. **`🧪 Tests & Coverage`** — full test suite + 100% coverage gate
+3. **`📝 Commit Conventions`** — validates commit message format
+4. **`🔬 Example Smoke Test`** — example widget tests + Linux build
+5. **`🐳 Docker Compose Validation`** — validates container definitions
+6. **`✅ PR Status Check`** — aggregator; **must pass before merge**
+
+Merge into `main`, `develop`, or `dev` is blocked by GitHub branch
+protection until **`✅ PR Status Check`** succeeds.

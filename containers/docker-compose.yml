@@ -32,7 +32,7 @@ services:
     build:
       context: ..
       dockerfile: containers/builder/Dockerfile
-      target: builder    # select the runtime stage (not web-js/web-wasm/pubdry)
+      target: builder # select the runtime stage (not web-js/web-wasm/pubdry)
       args:
         BASE_IMAGE: platform_serial-base:latest
     image: platform_serial-builder:latest
@@ -89,7 +89,7 @@ services:
       dockerfile: containers/devcontainer/Dockerfile
       args:
         BASE_IMAGE: platform_serial-base:latest
-        FLUTTER_VERSION: stable   # devcontainer uses same channel as base
+        FLUTTER_VERSION: stable # devcontainer uses same channel as base
         USERNAME: vscode
         USER_UID: "1000"
         USER_GID: "1000"

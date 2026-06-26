@@ -53,6 +53,15 @@
    - Build commands (JS and WASM)
    - VS Code & IntelliJ launch configurations
 
+7. **[HOOKS.md](./HOOKS.md)** - Git Hooks & CI Quality Gates
+   - Hook installation (Linux/macOS/Windows)
+   - `post-checkout` quality gate on branch creation
+   - `pre-commit` analyze + test alignment + CHANGELOG check
+   - `pre-push` full test suite + coverage + push guard
+   - `commit-msg` Conventional Commits validation
+   - CI pipeline jobs and merge requirements
+   - Bypass guide for emergency situations
+
 ### Quick Navigation by Task
 
 #### For Understanding the Implementation

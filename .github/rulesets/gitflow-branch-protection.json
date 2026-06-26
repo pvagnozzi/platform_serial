@@ -30,7 +30,11 @@
       "parameters": {
         "strict_required_status_checks_policy": true,
         "required_status_checks": [
-          { "context": "PR Status Check" }
+          { "context": "✅ PR Status Check" },
+          { "context": "📊 Analyze & Validate" },
+          { "context": "🧪 Tests & Coverage" },
+          { "context": "🔬 Example Smoke Test" },
+          { "context": "🐳 Docker Compose Validation" }
         ]
       }
     }

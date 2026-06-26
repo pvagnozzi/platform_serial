@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# ============================================================
+#  platform_serial — pre-commit hook
+#
+#  Fast checks before every commit:
+#    1. flutter analyze (fatal infos/warnings)
+#    2. Test alignment  — every lib/src/*.dart has a test counterpart
+#    3. Documentation   — public API changes have /// comments
+#    4. CHANGELOG       — reminder when lib/ files change
+#    5. No skip: markers in staged test files
+#
+#  Skip: set GIT_HOOKS_BYPASS=1
+# ============================================================
+
+source "$(dirname "$0")/_lib.sh"
+
+cd "${REPO_ROOT}"
+
+require_flutter || exit 0
+
+FAILED=0
+WARNS=0
+
+hdr "🔍 pre-commit quality checks"
+
+# ── 1. Static analysis ───────────────────────────────────────
+log "1/5 — Dart analysis..."
+ANALYZE_OUT=$(flutter analyze --fatal-infos --fatal-warnings --no-pub 2>&1)
+ANALYZE_EXIT=$?
+if [ "${ANALYZE_EXIT}" -eq 0 ]; then
+  ok "Dart analysis: no issues"
+else
+  err "Dart analysis failed:"
+  echo "${ANALYZE_OUT}" | grep -E "error|warning|info" | head -20
+  FAILED=1
+fi
+
+# ── 2. Test alignment ────────────────────────────────────────
+log "2/5 — Test alignment..."
+MISSING_TESTS=()
+for src_file in $(staged_lib_files | grep '^lib/src/'); do
+  # Strip lib/src/ prefix, convert to test/ path
+  relative="${src_file#lib/src/}"
+  # Skip platform factories, stubs, web impl (excluded from coverage)
+  case "$relative" in
+    platform/*_impl.dart | \
+    platform/method_channel_*.dart | \
+    platform/serial_platform_factory_*.dart) continue ;;
+  esac
+  # Build expected test path
+  base="${relative%.dart}"
+  test_file="test/unit/${base##*/}_test.dart"
+  if [ ! -f "${REPO_ROOT}/${test_file}" ]; then
+    MISSING_TESTS+=("${src_file} → expected: ${test_file}")
+  fi
+done
+
+if [ ${#MISSING_TESTS[@]} -eq 0 ]; then
+  ok "Test alignment: all staged lib files have test counterparts"
+else
+  warn "Test alignment: missing test files for staged changes:"
+  for entry in "${MISSING_TESTS[@]}"; do
+    warn "   ${entry}"
+  done
+  WARNS=$((WARNS + 1))
+fi
+
+# ── 3. Documentation on public API changes ──────────────────
+log "3/5 — Public API documentation..."
+UNDOC=()
+for dart_file in $(staged_lib_files | grep '^lib/src/'); do
+  # Find public declarations without a preceding /// comment
+  # (simplified heuristic: class/enum/function with no /// on line before)
+  while IFS= read -r line; do
+    if echo "$line" | grep -qE '^\s*(class|enum|abstract class|mixin|extension|typedef)\s+[A-Z]' ; then
+      UNDOC+=("${dart_file}: possible undocumented public type: ${line// /}")
+      break
+    fi
+  done < <(git diff --cached -- "${dart_file}" | grep '^+' | grep -v '^+++' | \
+            grep -vE '^\+\s*///' | sed 's/^+//')
+done
+
+if [ ${#UNDOC[@]} -eq 0 ]; then
+  ok "API documentation: no obvious gaps in staged changes"
+else
+  warn "API documentation: check /// comments on new public types:"
+  for entry in "${UNDOC[@]}"; do
+    warn "   ${entry}"
+  done
+  WARNS=$((WARNS + 1))
+fi
+
+# ── 4. CHANGELOG reminder ────────────────────────────────────
+log "4/5 — CHANGELOG alignment..."
+if any_lib_changed; then
+  if git diff --cached --name-only | grep -q 'CHANGELOG.md'; then
+    ok "CHANGELOG.md is staged alongside lib/ changes"
+  else
+    warn "lib/ files changed but CHANGELOG.md not staged."
+    warn "Update CHANGELOG.md if this is a user-facing change."
+    WARNS=$((WARNS + 1))
+  fi
+else
+  ok "CHANGELOG: no lib/ changes in this commit"
+fi
+
+# ── 5. No accidental skip: in tests ──────────────────────────
+log "5/5 — Checking for skip: markers in staged tests..."
+SKIPPED_TESTS=()
+for test_file in $(staged_test_files); do
+  SKIP_LINE=$(git diff --cached -- "${test_file}" | \
+              grep '^+' | grep -v '^+++' | \
+              grep 'skip:' || true)
+  [ -n "${SKIP_LINE}" ] && SKIPPED_TESTS+=("${test_file}")
+done
+
+if [ ${#SKIPPED_TESTS[@]} -eq 0 ]; then
+  ok "No new skip: markers in staged test files"
+else
+  err "Staged test files contain skip: markers:"
+  for f in "${SKIPPED_TESTS[@]}"; do err "   ${f}"; done
+  FAILED=1
+fi
+
+# ── Summary ──────────────────────────────────────────────────
+echo ""
+if [ "${FAILED}" -ne 0 ]; then
+  die "pre-commit: ${FAILED} check(s) failed. Fix before committing."
+elif [ "${WARNS}" -ne 0 ]; then
+  warn "pre-commit: ${WARNS} warning(s) — review above before committing."
+  warn "Force commit with: GIT_HOOKS_BYPASS=1 git commit ..."
+  # Warnings do NOT block the commit
+fi
+ok "pre-commit checks complete"
