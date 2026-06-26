@@ -32,6 +32,7 @@ services:
     build:
       context: ..
       dockerfile: containers/builder/Dockerfile
+      target: builder    # select the runtime stage (not web-js/web-wasm/pubdry)
       args:
         BASE_IMAGE: platform_serial-base:latest
     image: platform_serial-builder:latest
@@ -40,7 +41,7 @@ services:
     environment:
       BUILD_TARGET: ${BUILD_TARGET:-web-js}
     volumes:
-      - ../build/web:/workspace/build/web
+      - ../examples/flutter_serial_monitor/build/web:/workspace/examples/flutter_serial_monitor/build/web
 
   test:
     build:
@@ -88,7 +89,7 @@ services:
       dockerfile: containers/devcontainer/Dockerfile
       args:
         BASE_IMAGE: platform_serial-base:latest
-        FLUTTER_VERSION: "3.32.0"
+        FLUTTER_VERSION: stable   # devcontainer uses same channel as base
         USERNAME: vscode
         USER_UID: "1000"
         USER_GID: "1000"
