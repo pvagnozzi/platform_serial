@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================
 #  🧑‍💻 devcontainer — platform_serial DevContainer Launcher
-#  Builds and starts the full development container with an
-#  interactive shell. Docker socket is mounted for sibling
-#  container operations.
+#  Builds and starts the full development container.
+#  With --force, both base and devcontainer images are rebuilt.
 # ============================================================
 set -euo pipefail
 
@@ -18,24 +17,24 @@ warn() { printf "%b⚠️   %s%b\n" "$yellow" "$1" "$reset"; }
 fail() { printf "%b❌  %s%b\n" "$red"   "$1" "$reset"; exit 1; }
 run()  { if [[ "$DRY_RUN" == 1 ]]; then warn "dry-run: $*"; else eval "$@"; fi; }
 
-DRY_RUN=0; FORCE=0; NO_CACHE=""; SHELL_CMD="/bin/bash"
+DRY_RUN=0; FORCE=0; NO_CACHE=""
 
 usage() {
   cat <<'EOF'
 🧑‍💻 devcontainer — Start the platform_serial development container
 
 Synopsis:
-  scripts/linux/commands/devcontainer [options] [-- COMMAND...]
+  scripts/macos/commands/devcontainer [options] [-- COMMAND...]
 
 Options:
-      --dry-run     Print actions without executing them.
-      --force       Force rebuild of the devcontainer image.
-  -h, --help        Show this help.
+      --dry-run   Print actions without executing them.
+      --force     Force rebuild of the devcontainer image (--no-cache).
+  -h, --help      Show this help.
 
 Examples:
-  scripts/linux/commands/devcontainer              # interactive shell
-  scripts/linux/commands/devcontainer --force      # rebuild + start
-  scripts/linux/commands/devcontainer -- flutter test  # run one command
+  scripts/macos/commands/devcontainer               # interactive shell
+  scripts/macos/commands/devcontainer --force       # rebuild + start
+  scripts/macos/commands/devcontainer -- flutter test  # run one command
 EOF
 }
 
@@ -54,6 +53,9 @@ done
 printf "%b%s%b\n" "$bold" "🧑‍💻 platform_serial — DevContainer" "$reset"
 
 command -v docker >/dev/null 2>&1 || fail "Docker not found. Install Docker Desktop first."
+
+log "📦 Building base image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} base"
 
 log "📦 Building devcontainer image..."
 run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} devcontainer"

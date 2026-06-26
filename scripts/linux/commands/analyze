@@ -4,6 +4,7 @@
 #  Runs flutter analyze --fatal-infos --fatal-warnings on root
 #  package + examples/flutter_serial_monitor, and validates
 #  pub.dev metadata via dry-run publish.
+#  With --force, both base and analyze images are rebuilt first.
 # ============================================================
 set -euo pipefail
 
@@ -28,16 +29,16 @@ Synopsis:
   scripts/linux/commands/analyze [options]
 
 Options:
-      --dry-run            Print actions without executing them.
-      --force              Force rebuild of Docker images.
-      --flags FLAGS        Extra flags for flutter analyze
-                           (default: --fatal-infos --fatal-warnings).
-  -h, --help               Show this help.
+      --dry-run       Print actions without executing them.
+      --force         Force rebuild of Docker images (--no-cache).
+      --flags FLAGS   Extra flags for flutter analyze
+                      (default: --fatal-infos --fatal-warnings).
+  -h, --help          Show this help.
 
 Examples:
-  scripts/linux/commands/analyze                        # strict analysis
+  scripts/linux/commands/analyze                         # strict analysis
   scripts/linux/commands/analyze --flags "--fatal-warnings"  # warnings only
-  scripts/linux/commands/analyze --force                # rebuild + analyze
+  scripts/linux/commands/analyze --force                 # rebuild + analyze
 EOF
 }
 
@@ -58,6 +59,9 @@ command -v docker >/dev/null 2>&1 || fail "Docker not found. Install Docker Desk
 
 log "📦 Building base image..."
 run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} base"
+
+log "📦 Building analyze image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} analyze"
 
 log "🔍 Running analyze container..."
 run "ANALYZE_FLAGS='${FLAGS}' docker compose -f '${COMPOSE_FILE}' run --rm analyze"

@@ -2,7 +2,8 @@
 # ============================================================
 #  🔒 security — platform_serial Docker Security Scan
 #  Runs Trivy filesystem scan, Trivy config scan, OSV-Scanner,
-#  and dart pub outdated. Reports are saved to ./security-reports/
+#  and dart pub outdated. Reports are saved to ./security-reports/.
+#  With --force, both base and security images are rebuilt first.
 # ============================================================
 set -euo pipefail
 
@@ -24,34 +25,34 @@ usage() {
 🔒 security — Run the platform_serial vulnerability scan container
 
 Synopsis:
-  scripts/linux/commands/security [options]
+  scripts/macos/commands/security [options]
 
 Options:
-      --dry-run            Print actions without executing them.
-      --force              Force rebuild of Docker images.
-      --no-fail            Do not exit with error on HIGH/CRITICAL findings.
-  -h, --help               Show this help.
+      --dry-run    Print actions without executing them.
+      --force      Force rebuild of Docker images (--no-cache).
+      --no-fail    Do not exit with error on HIGH/CRITICAL findings.
+  -h, --help       Show this help.
 
 Produces:
-  security-reports/trivy-fs.json     Trivy filesystem scan (JSON)
-  security-reports/trivy-config.json Trivy config/IaC scan (JSON)
-  security-reports/osv-scan.json     OSV-Scanner dependency audit
-  security-reports/pub-outdated.json dart pub outdated
+  security-reports/trivy-fs.json      Trivy filesystem scan
+  security-reports/trivy-config.json  Trivy config/IaC scan
+  security-reports/osv-scan.json      OSV-Scanner dependency audit
+  security-reports/pub-outdated.json  dart pub outdated
 
 Examples:
-  scripts/linux/commands/security
-  scripts/linux/commands/security --no-fail   # report only, do not fail
-  scripts/linux/commands/security --force     # rebuild scanner images
+  scripts/macos/commands/security              # full scan, fail on HIGH/CRITICAL
+  scripts/macos/commands/security --no-fail    # report only, do not fail CI
+  scripts/macos/commands/security --force      # rebuild images, then scan
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --dry-run)   DRY_RUN=1 ;;
-    --force)     FORCE=1; NO_CACHE="--no-cache" ;;
-    --no-fail)   FAIL_ON_HIGH="false" ;;
-    -h|--help)   usage; exit 0 ;;
-    *)           fail "Unknown option: $1" ;;
+    --dry-run)  DRY_RUN=1 ;;
+    --force)    FORCE=1; NO_CACHE="--no-cache" ;;
+    --no-fail)  FAIL_ON_HIGH="false" ;;
+    -h|--help)  usage; exit 0 ;;
+    *)          fail "Unknown option: $1" ;;
   esac
   shift
 done
@@ -62,6 +63,9 @@ command -v docker >/dev/null 2>&1 || fail "Docker not found. Install Docker Desk
 
 log "📦 Building base image..."
 run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} base"
+
+log "📦 Building security image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} security"
 
 log "🔒 Running security container..."
 run "FAIL_ON_HIGH=${FAIL_ON_HIGH} docker compose -f '${COMPOSE_FILE}' run --rm security"

@@ -2,7 +2,8 @@
 # ============================================================
 #  🧪 test — platform_serial Docker Test Command
 #  Runs flutter test --coverage + coverage gate inside a
-#  container. Coverage report is written to ./coverage/lcov.info
+#  container. Coverage report is written to ./coverage/lcov.info.
+#  With --force, both base and test images are rebuilt first.
 # ============================================================
 set -euo pipefail
 
@@ -27,15 +28,15 @@ Synopsis:
   scripts/linux/commands/test [options]
 
 Options:
-      --dry-run             Print actions without executing them.
-      --force               Force rebuild of Docker images.
-      --min-coverage N      Minimum line coverage % (default: 100).
-  -h, --help                Show this help.
+      --dry-run           Print actions without executing them.
+      --force             Force rebuild of Docker images (--no-cache).
+      --min-coverage N    Minimum line coverage % (default: 100).
+  -h, --help              Show this help.
 
 Examples:
-  scripts/linux/commands/test                       # run with 100% gate
-  scripts/linux/commands/test --min-coverage 80     # relax coverage gate
-  scripts/linux/commands/test --force               # rebuild + test
+  scripts/linux/commands/test                     # run with 100% gate
+  scripts/linux/commands/test --min-coverage 80   # relax coverage gate
+  scripts/linux/commands/test --force             # rebuild images, then test
 EOF
 }
 
@@ -56,6 +57,9 @@ command -v docker >/dev/null 2>&1 || fail "Docker not found. Install Docker Desk
 
 log "📦 Building base image..."
 run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} base"
+
+log "📦 Building test image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} test"
 
 log "🧪 Running test container..."
 run "MIN_COVERAGE=${MIN_COVERAGE} docker compose -f '${COMPOSE_FILE}' run --rm test"
