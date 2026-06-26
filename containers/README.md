@@ -10,7 +10,7 @@ Docker containers for CI, local quality gates, security scanning, and developmen
 containers/
 ├── base/                   # Shared Flutter base image (used by all others)
 │   └── Dockerfile
-├── build/                  # Flutter web build (JS + WASM + pub dry-run)
+├── builder/                # Flutter web build (JS + WASM + pub dry-run)
 │   ├── Dockerfile
 │   └── entrypoint.sh
 ├── test/                   # flutter test --coverage + coverage gate
@@ -49,7 +49,7 @@ docker compose -f containers/docker-compose.yml build base
 | Service | Image | Purpose |
 |---------|-------|---------|
 | `base` | `platform_serial-base` | Flutter + Dart base |
-| `build` | `platform_serial-build` | Web build (JS / WASM / pubdry) |
+| `builder` | `platform_serial-builder` | Web build (JS / WASM / pubdry) |
 | `test` | `platform_serial-test` | Tests + coverage |
 | `analyze` | `platform_serial-analyze` | Static analysis |
 | `security` | `platform_serial-security` | Trivy + OSV + pub audit |
@@ -73,10 +73,10 @@ docker compose -f containers/docker-compose.yml run --rm analyze
 docker compose -f containers/docker-compose.yml run --rm security
 
 # Build Flutter web (JS)
-docker compose -f containers/docker-compose.yml run --rm build
+docker compose -f containers/docker-compose.yml run --rm builder
 
 # Build Flutter web (WASM)
-BUILD_TARGET=web-wasm docker compose -f containers/docker-compose.yml run --rm build
+BUILD_TARGET=web-wasm docker compose -f containers/docker-compose.yml run --rm builder
 
 # Start interactive dev container
 docker compose -f containers/docker-compose.yml run --rm --service-ports devcontainer
@@ -91,7 +91,7 @@ Or use the per-platform scripts in `scripts/<platform>/commands/`.
 ```
 containers/base/Dockerfile       ← Flutter + Dart foundation
         │
-        ├── containers/build/Dockerfile
+        ├── containers/builder/Dockerfile
         │       ├── stage: build     (flutter pub get)
         │       ├── stage: web-js    (flutter build web)
         │       ├── stage: web-wasm  (flutter build web --wasm)
@@ -119,7 +119,7 @@ containers/base/Dockerfile       ← Flutter + Dart foundation
 
 | Variable | Service | Default | Description |
 |----------|---------|---------|-------------|
-| `BUILD_TARGET` | build | `web-js` | `web-js` \| `web-wasm` \| `pubdry` |
+| `BUILD_TARGET` | builder | `web-js` | `web-js` \| `web-wasm` \| `pubdry` |
 | `MIN_COVERAGE` | test | `100` | Minimum line coverage percentage |
 | `ANALYZE_FLAGS` | analyze | `--fatal-infos --fatal-warnings` | Flutter analyze flags |
 | `FAIL_ON_HIGH` | security | `true` | Exit non-zero on HIGH/CRITICAL findings |

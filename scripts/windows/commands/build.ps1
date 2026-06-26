@@ -4,7 +4,7 @@
 
 .DESCRIPTION
 Idempotent script that builds the shared base Docker image and then runs
-the build container. Supports JS (default), WASM, and pub.dev dry-run targets.
+the builder container. Supports JS (default), WASM, and pub.dev dry-run targets.
 
 .PARAMETER Target
 Build target: web-js (default) | web-wasm | pubdry.
@@ -23,39 +23,39 @@ scripts/windows/commands/build.ps1
 scripts/windows/commands/build.ps1 -Target web-wasm
 scripts/windows/commands/build.ps1 -Target pubdry -Force
 #>
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost','',Justification='Intentional colored output.')]
-[CmdletBinding(SupportsShouldProcess=$true)]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Intentional colored output.')]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-  [ValidateSet('web-js','web-wasm','pubdry')]
-  [string]$Target  = 'web-js',
-  [switch]$Force,
-  [switch]$DryRun,
-  [switch]$Help
+    [ValidateSet('web-js', 'web-wasm', 'pubdry')]
+    [string]$Target = 'web-js',
+    [switch]$Force,
+    [switch]$DryRun,
+    [switch]$Help
 )
 $ErrorActionPreference = 'Stop'
 
-$ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot   = Resolve-Path (Join-Path $ScriptDir '..\..\..') | Select-Object -ExpandProperty Path
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot = Resolve-Path (Join-Path $ScriptDir '..\..\..') | Select-Object -ExpandProperty Path
 $ComposeFile = Join-Path $RepoRoot 'containers\docker-compose.yml'
 
 function Write-Step($m) { Write-Host "  $m" -ForegroundColor Cyan }
-function Write-Ok($m)   { Write-Host "✅  $m" -ForegroundColor Green }
+function Write-Ok($m) { Write-Host "✅  $m" -ForegroundColor Green }
 function Write-Warn($m) { Write-Host "⚠️   $m" -ForegroundColor Yellow }
 function Invoke-Cmd {
-  param([string]$Cmd)
-  if ($DryRun) { Write-Warn "dry-run: $Cmd" } else { Invoke-Expression $Cmd }
+    param([string]$Cmd)
+    if ($DryRun) { Write-Warn "dry-run: $Cmd" } else { Invoke-Expression $Cmd }
 }
 
 if ($Help) {
-  Get-Help $MyInvocation.MyCommand.Path -Detailed
-  exit 0
+    Get-Help $MyInvocation.MyCommand.Path -Detailed
+    exit 0
 }
 
 Write-Host "🏗️  platform_serial — Docker Build (target: $Target)" -ForegroundColor White -BackgroundColor DarkBlue
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-  Write-Error "❌  Docker not found. Install Docker Desktop first."
-  exit 1
+    Write-Error "❌  Docker not found. Install Docker Desktop first."
+    exit 1
 }
 
 $noCache = if ($Force) { '--no-cache' } else { '' }
@@ -63,8 +63,9 @@ $noCache = if ($Force) { '--no-cache' } else { '' }
 Write-Step "📦 Building base image..."
 Invoke-Cmd "docker compose -f '$ComposeFile' build $noCache base"
 
-Write-Step "🏗️  Building '$Target' via build container..."
+Write-Step "🏗️  Building '$Target' via builder container..."
 $env:BUILD_TARGET = $Target
-Invoke-Cmd "docker compose -f '$ComposeFile' run --rm $noCache build"
+Invoke-Cmd "docker compose -f '$ComposeFile' run --rm $noCache builder"
 
 Write-Ok "Build complete (target: $Target)"
+

@@ -3,7 +3,7 @@
 #
 #  Services:
 #    base       – Build the shared base image
-#    build      – Flutter web build
+#    builder    – Flutter web build
 #    test       – flutter test + coverage gate
 #    analyze    – flutter analyze + pub dry-run
 #    security   – trivy + osv-scanner
@@ -28,13 +28,13 @@ services:
     <<: *base-service
     command: ["flutter", "doctor"]
 
-  build:
+  builder:
     build:
       context: ..
-      dockerfile: containers/build/Dockerfile
+      dockerfile: containers/builder/Dockerfile
       args:
         BASE_IMAGE: platform_serial-base:latest
-    image: platform_serial-build:latest
+    image: platform_serial-builder:latest
     depends_on:
       - base
     environment:

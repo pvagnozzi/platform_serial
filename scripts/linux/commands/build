@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
 #  🏗️  build — platform_serial Docker Build Command
-#  Builds the Flutter web output using the build container.
+#  Builds the Flutter web output using the builder container.
 #  Idempotent: rebuilds only when sources change (--force rebuilds
 #  the image unconditionally).
 # ============================================================
@@ -61,7 +61,7 @@ command -v docker >/dev/null 2>&1 || fail "Docker not found. Install Docker Desk
 log "📦 Building base image..."
 run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} base"
 
-log "🏗️  Building '${TARGET}' via build container..."
-run "BUILD_TARGET=${TARGET} docker compose -f '${COMPOSE_FILE}' run --rm ${NO_CACHE} build"
+log "🏗️  Building '${TARGET}' via builder container..."
+run "BUILD_TARGET=${TARGET} docker compose -f '${COMPOSE_FILE}' run --rm ${NO_CACHE} builder"
 
 ok "Build complete (target: ${TARGET})"
