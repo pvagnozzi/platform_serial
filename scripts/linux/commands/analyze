@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# ============================================================
+#  🔍 analyze — platform_serial Docker Analyze Command
+#  Runs flutter analyze --fatal-infos --fatal-warnings on root
+#  package + examples/flutter_serial_monitor, and validates
+#  pub.dev metadata via dry-run publish.
+#  With --force, both base and analyze images are rebuilt first.
+# ============================================================
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+COMPOSE_FILE="${REPO_ROOT}/containers/docker-compose.yml"
+
+bold='\033[1m'; green='\033[32m'; yellow='\033[33m'; red='\033[31m'; cyan='\033[36m'; reset='\033[0m'
+log()  { printf "%b%s%b\n" "$cyan"   "  $1" "$reset"; }
+ok()   { printf "%b✅  %s%b\n" "$green"  "$1" "$reset"; }
+warn() { printf "%b⚠️   %s%b\n" "$yellow" "$1" "$reset"; }
+fail() { printf "%b❌  %s%b\n" "$red"   "$1" "$reset"; exit 1; }
+run()  { if [[ "$DRY_RUN" == 1 ]]; then warn "dry-run: $*"; else eval "$@"; fi; }
+
+DRY_RUN=0; FORCE=0; FLAGS="--fatal-infos --fatal-warnings"; NO_CACHE=""
+
+usage() {
+  cat <<'EOF'
+🔍 analyze — Run the platform_serial static analysis container
+
+Synopsis:
+  scripts/linux/commands/analyze [options]
+
+Options:
+      --dry-run       Print actions without executing them.
+      --force         Force rebuild of Docker images (--no-cache).
+      --flags FLAGS   Extra flags for flutter analyze
+                      (default: --fatal-infos --fatal-warnings).
+  -h, --help          Show this help.
+
+Examples:
+  scripts/linux/commands/analyze                         # strict analysis
+  scripts/linux/commands/analyze --flags "--fatal-warnings"  # warnings only
+  scripts/linux/commands/analyze --force                 # rebuild + analyze
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)  DRY_RUN=1 ;;
+    --force)    FORCE=1; NO_CACHE="--no-cache" ;;
+    --flags)    FLAGS="$2"; shift ;;
+    -h|--help)  usage; exit 0 ;;
+    *)          fail "Unknown option: $1" ;;
+  esac
+  shift
+done
+
+printf "%b%s%b\n" "$bold" "🔍 platform_serial — Docker Analyze" "$reset"
+
+command -v docker >/dev/null 2>&1 || fail "Docker not found. Install Docker Desktop first."
+
+log "📦 Building base image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} base"
+
+log "📦 Building analyze image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} analyze"
+
+log "🔍 Running analyze container..."
+run "ANALYZE_FLAGS='${FLAGS}' docker compose -f '${COMPOSE_FILE}' run --rm analyze"
+
+ok "Static analysis complete — no issues"

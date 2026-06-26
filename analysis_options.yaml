@@ -1,6 +1,11 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  exclude:
+    # examples/ is a separate Dart package (flutter_serial_monitor) with its
+    # own pubspec.yaml and analysis_options.yaml. Exclude it from root
+    # package analysis to prevent package: URI resolution failures.
+    - examples/**
   errors:
     missing_required_param: warning
     missing_return: warning

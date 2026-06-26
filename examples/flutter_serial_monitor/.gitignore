@@ -1,0 +1,58 @@
+# Copyright (c) 2026 Piergiorgio Vagnozzi.
+# Licensed under the MIT License.
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+# Ignore IntelliJ internal caches and generated files, but NOT
+# .idea/runConfigurations/ — those are tracked for developer convenience.
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/vcs.xml
+.idea/misc.xml
+.idea/markdown.xml
+.idea/dbnavigator.xml
+.idea/*.xml
+.idea/shelf/
+
+# VS Code — launch.json is tracked for developer convenience
+# (uncomment the line below to ignore .vscode/ entirely)
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+

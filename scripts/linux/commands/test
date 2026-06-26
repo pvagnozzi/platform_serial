@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# ============================================================
+#  🧪 test — platform_serial Docker Test Command
+#  Runs flutter test --coverage + coverage gate inside a
+#  container. Coverage report is written to ./coverage/lcov.info.
+#  With --force, both base and test images are rebuilt first.
+# ============================================================
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+COMPOSE_FILE="${REPO_ROOT}/containers/docker-compose.yml"
+
+bold='\033[1m'; green='\033[32m'; yellow='\033[33m'; red='\033[31m'; cyan='\033[36m'; reset='\033[0m'
+log()  { printf "%b%s%b\n" "$cyan"   "  $1" "$reset"; }
+ok()   { printf "%b✅  %s%b\n" "$green"  "$1" "$reset"; }
+warn() { printf "%b⚠️   %s%b\n" "$yellow" "$1" "$reset"; }
+fail() { printf "%b❌  %s%b\n" "$red"   "$1" "$reset"; exit 1; }
+run()  { if [[ "$DRY_RUN" == 1 ]]; then warn "dry-run: $*"; else eval "$@"; fi; }
+
+DRY_RUN=0; FORCE=0; MIN_COVERAGE=100; NO_CACHE=""
+
+usage() {
+  cat <<'EOF'
+🧪 test — Run the platform_serial test container
+
+Synopsis:
+  scripts/linux/commands/test [options]
+
+Options:
+      --dry-run           Print actions without executing them.
+      --force             Force rebuild of Docker images (--no-cache).
+      --min-coverage N    Minimum line coverage % (default: 100).
+  -h, --help              Show this help.
+
+Examples:
+  scripts/linux/commands/test                     # run with 100% gate
+  scripts/linux/commands/test --min-coverage 80   # relax coverage gate
+  scripts/linux/commands/test --force             # rebuild images, then test
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)       DRY_RUN=1 ;;
+    --force)         FORCE=1; NO_CACHE="--no-cache" ;;
+    --min-coverage)  MIN_COVERAGE="$2"; shift ;;
+    -h|--help)       usage; exit 0 ;;
+    *)               fail "Unknown option: $1" ;;
+  esac
+  shift
+done
+
+printf "%b%s%b\n" "$bold" "🧪 platform_serial — Docker Test (min coverage: ${MIN_COVERAGE}%)" "$reset"
+
+command -v docker >/dev/null 2>&1 || fail "Docker not found. Install Docker Desktop first."
+
+log "📦 Building base image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} base"
+
+log "📦 Building test image..."
+run "docker compose -f '${COMPOSE_FILE}' build ${NO_CACHE} test"
+
+log "🧪 Running test container..."
+run "MIN_COVERAGE=${MIN_COVERAGE} docker compose -f '${COMPOSE_FILE}' run --rm test"
+
+ok "All tests passed (min coverage: ${MIN_COVERAGE}%)"

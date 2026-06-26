@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# ============================================================
+#  platform_serial — pre-push hook
+#
+#  Runs before git push.  Stdin provides the remote refs:
+#    <local-ref> <local-sha> <remote-ref> <remote-sha>
+#
+#  Checks:
+#    1. Prevent direct push to protected branches
+#    2. Full flutter test --coverage + coverage gate
+#    3. flutter analyze (strict)
+#    4. flutter pub publish --dry-run (on main/release/* pushes)
+#
+#  Skip: set GIT_HOOKS_BYPASS=1
+# ============================================================
+
+source "$(dirname "$0")/_lib.sh"
+
+cd "${REPO_ROOT}"
+
+require_flutter || exit 0
+
+REMOTE="$1"
+# REMOTE_URL="$2"  # available but not used
+
+FAILED=0
+
+hdr "🚀 pre-push quality gate (remote: ${REMOTE})"
+
+# ── Parse pushed refs from stdin ─────────────────────────────
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  # Extract branch name from refs/heads/<branch>
+  PUSHED_BRANCH="${remote_ref#refs/heads/}"
+
+  # ── 1. Block direct push to protected branches ─────────────
+  if is_protected_branch "${PUSHED_BRANCH}"; then
+    err "Direct push to '${PUSHED_BRANCH}' is not allowed."
+    err "Open a Pull Request to merge into '${PUSHED_BRANCH}'."
+    err "Bypass: GIT_HOOKS_BYPASS=1 git push  (use with caution)"
+    exit 1
+  fi
+
+  # Detect deletion push (sha of zeros)
+  if [ "${local_sha}" = "0000000000000000000000000000000000000000" ]; then
+    warn "Skipping quality gate for branch deletion push."
+    continue
+  fi
+
+  IS_RELEASE_PUSH=0
+  case "${PUSHED_BRANCH}" in
+    release/* | hotfix/* | main) IS_RELEASE_PUSH=1 ;;
+  esac
+
+  # ── 2. Static analysis ──────────────────────────────────────
+  log "1/3 — Dart analysis..."
+  if flutter analyze --fatal-infos --fatal-warnings 2>&1 | tail -3; then
+    ok "Static analysis passed"
+  else
+    err "Static analysis failed"
+    FAILED=1
+  fi
+
+  # ── 3. Full test suite + coverage gate ─────────────────────
+  log "2/3 — Running full test suite with coverage..."
+  if flutter test --coverage 2>&1 | tail -5; then
+    if dart run tool/coverage_gate.dart \
+           --lcov coverage/lcov.info --min-lines 100 2>&1; then
+      ok "Tests passed — coverage 100%"
+    else
+      err "Coverage gate failed"
+      FAILED=1
+    fi
+  else
+    err "Tests failed"
+    FAILED=1
+  fi
+
+  # ── 4. pub.dev dry-run on release branches ──────────────────
+  if [ "${IS_RELEASE_PUSH}" -eq 1 ]; then
+    log "3/3 — pub.dev publish dry-run (release branch)..."
+    if flutter pub publish --dry-run 2>&1 | grep -E "Package has|Package is|error" | head -5; then
+      ok "pub.dev dry-run passed"
+    else
+      err "pub.dev dry-run failed"
+      FAILED=1
+    fi
+  else
+    ok "3/3 — pub.dev dry-run skipped (not a release branch)"
+  fi
+
+done
+
+echo ""
+if [ "${FAILED}" -ne 0 ]; then
+  die "pre-push: ${FAILED} check(s) failed. Fix before pushing."
+fi
+ok "pre-push gate passed — push approved 🚀"

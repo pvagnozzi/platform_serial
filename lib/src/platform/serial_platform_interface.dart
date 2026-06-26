@@ -7,7 +7,7 @@ import '../models/serial_config.dart';
 import '../models/serial_control_signals.dart';
 import '../models/serial_port_info.dart';
 import 'serial_platform_factory_stub.dart'
-    if (dart.library.html) 'serial_platform_factory_web.dart'
+    if (dart.library.js_interop) 'serial_platform_factory_web.dart'
     if (dart.library.io) 'serial_platform_factory_io.dart';
 
 /// Platform interface for serial communication.
