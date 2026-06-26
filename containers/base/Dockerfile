@@ -5,15 +5,13 @@
 # ============================================================
 # syntax=docker/dockerfile:1
 
-ARG FLUTTER_VERSION=3.32.0
-ARG DART_CHANNEL=stable
+ARG FLUTTER_VERSION=stable
 ARG DEBIAN_RELEASE=bookworm
 
 # ── stage: flutter-base ─────────────────────────────────────
 FROM debian:${DEBIAN_RELEASE}-slim AS flutter-base
 
 ARG FLUTTER_VERSION
-ARG DART_CHANNEL
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \

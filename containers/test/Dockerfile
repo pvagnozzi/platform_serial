@@ -14,6 +14,9 @@ COPY . .
 
 RUN flutter pub get
 
+# Ensure entrypoint is executable (git may not preserve +x on Windows hosts)
+RUN chmod +x /workspace/containers/test/entrypoint.sh
+
 LABEL org.opencontainers.image.title="platform_serial-test" \
       org.opencontainers.image.description="Test + coverage stage for platform_serial"
 

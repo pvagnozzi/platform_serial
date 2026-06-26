@@ -15,6 +15,9 @@ COPY . .
 RUN flutter pub get \
  && (cd examples/flutter_serial_monitor && flutter pub get)
 
+# Ensure entrypoint is executable (git may not preserve +x on Windows hosts)
+RUN chmod +x /workspace/containers/analyze/entrypoint.sh
+
 LABEL org.opencontainers.image.title="platform_serial-analyze" \
       org.opencontainers.image.description="Static analysis stage for platform_serial"
 
