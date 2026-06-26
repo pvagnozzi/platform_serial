@@ -34,12 +34,12 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot    = Resolve-Path (Join-Path $ScriptDir '..\..\..') | Select-Object -ExpandProperty Path
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot = Resolve-Path (Join-Path $ScriptDir '..\..\..') | Select-Object -ExpandProperty Path
 $ComposeFile = Join-Path $RepoRoot 'containers\docker-compose.yml'
 
 function Write-Step($m) { Write-Host "  $m" -ForegroundColor Cyan }
-function Write-Ok($m)   { Write-Host "✅  $m" -ForegroundColor Green }
+function Write-Ok($m) { Write-Host "✅  $m" -ForegroundColor Green }
 function Write-Warn($m) { Write-Host "⚠️   $m" -ForegroundColor Yellow }
 function Invoke-Cmd {
     param([string]$Cmd)
@@ -68,3 +68,4 @@ $env:ANALYZE_FLAGS = $Flags
 Invoke-Cmd "docker compose -f '$ComposeFile' run --rm analyze"
 
 Write-Ok "Static analysis complete — no issues"
+

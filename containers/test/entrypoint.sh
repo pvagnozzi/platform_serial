@@ -13,7 +13,7 @@ flutter test --coverage
 
 echo "📊 Enforcing coverage gate (≥${MIN_COVERAGE}% lines)..."
 dart run tool/coverage_gate.dart \
-    --lcov coverage/lcov.info \
-    --min-lines "${MIN_COVERAGE}"
+	--lcov coverage/lcov.info \
+	--min-lines "${MIN_COVERAGE}"
 
 echo "✅ All tests passed and coverage gate satisfied"

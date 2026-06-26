@@ -5,12 +5,11 @@ description: >-
   Flutter Serial Monitor — professional serial terminal example
   for the platform_serial plugin.
 publish_to: none
-
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: '>=3.10.0'
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
 
 dependencies:
   flutter:
@@ -20,7 +19,7 @@ dependencies:
   platform_serial:
     # platform_serial root is two levels up from
     # examples/flutter_serial_monitor/
-    path: ../..   
+    path: ../..
 
 dev_dependencies:
   flutter_test:

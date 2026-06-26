@@ -35,12 +35,12 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RepoRoot    = Resolve-Path (Join-Path $ScriptDir '..\..\..') | Select-Object -ExpandProperty Path
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot = Resolve-Path (Join-Path $ScriptDir '..\..\..') | Select-Object -ExpandProperty Path
 $ComposeFile = Join-Path $RepoRoot 'containers\docker-compose.yml'
 
 function Write-Step($m) { Write-Host "  $m" -ForegroundColor Cyan }
-function Write-Ok($m)   { Write-Host "✅  $m" -ForegroundColor Green }
+function Write-Ok($m) { Write-Host "✅  $m" -ForegroundColor Green }
 function Write-Warn($m) { Write-Host "⚠️   $m" -ForegroundColor Yellow }
 function Invoke-Cmd {
     param([string]$Cmd)
@@ -56,7 +56,7 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-$noCache    = if ($Force)  { '--no-cache' } else { '' }
+$noCache = if ($Force) { '--no-cache' } else { '' }
 $failOnHigh = if ($NoFail) { 'false' }      else { 'true' }
 
 Write-Step "📦 Building base image..."
@@ -70,3 +70,4 @@ $env:FAIL_ON_HIGH = $failOnHigh
 Invoke-Cmd "docker compose -f '$ComposeFile' run --rm security"
 
 Write-Ok "Security scan complete — check security-reports/ for detailed findings"
+

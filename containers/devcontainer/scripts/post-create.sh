@@ -21,7 +21,7 @@ flutter config --enable-linux-desktop
 
 # -- Git config (if not already set) ----------------------------
 if [ -z "$(git config --global user.email 2>/dev/null || true)" ]; then
-    echo "ℹ️  Git user not configured — skipping (set via VS Code settings)."
+	echo "ℹ️  Git user not configured — skipping (set via VS Code settings)."
 fi
 
 # -- Pre-cache Flutter web engine --------------------------------
