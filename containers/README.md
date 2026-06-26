@@ -34,13 +34,17 @@ containers/
 
 ## Base image
 
-`containers/base/Dockerfile` is the shared foundation. It installs Flutter,
-pre-warms the pub cache, and is used as the `FROM` layer in all other
-containers. Build it first:
+`containers/base/Dockerfile` is the shared foundation. It installs Flutter
+(`stable` channel), pre-warms the pub cache, and is used as the `FROM` layer
+in all other containers. Build it first:
 
 ```bash
 docker compose -f containers/docker-compose.yml build base
 ```
+
+> **Flutter version**: the base image always uses the `stable` channel so CI
+> tracks the latest stable release. Override with:
+> `docker compose build --build-arg FLUTTER_VERSION=3.44.4 base`
 
 ---
 
@@ -86,16 +90,33 @@ Or use the per-platform scripts in `scripts/<platform>/commands/`.
 
 ---
 
+## Builder container
+
+The builder uses **two modes** controlled by `BUILD_TARGET`:
+
+| `BUILD_TARGET` | What runs | Where |
+|---|---|---|
+| `web-js` (default) | `flutter build web` | `examples/flutter_serial_monitor/` |
+| `web-wasm` | `flutter build web --wasm` | `examples/flutter_serial_monitor/` |
+| `pubdry` | `flutter pub publish --dry-run` | repo root (plugin) |
+
+Build artifacts are written to
+`examples/flutter_serial_monitor/build/web` and mounted to the host
+via the `docker-compose.yml` volume.
+
+---
+
 ## Multi-stage build design
 
 ```
 containers/base/Dockerfile       ← Flutter + Dart foundation
         │
         ├── containers/builder/Dockerfile
-        │       ├── stage: build     (flutter pub get)
-        │       ├── stage: web-js    (flutter build web)
-        │       ├── stage: web-wasm  (flutter build web --wasm)
-        │       └── stage: pubdry    (flutter pub publish --dry-run)
+        │       ├── stage: deps      (flutter pub get — shared base for all)
+        │       ├── stage: builder   (runtime ENTRYPOINT — used by compose)
+        │       ├── stage: web-js    (compile-time: flutter build web)
+        │       ├── stage: web-wasm  (compile-time: flutter build web --wasm)
+        │       └── stage: pubdry    (compile-time: flutter pub publish --dry-run)
         │
         ├── containers/test/Dockerfile
         │       └── stage: test      (flutter test --coverage)
