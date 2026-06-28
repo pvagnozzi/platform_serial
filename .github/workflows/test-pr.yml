@@ -194,7 +194,7 @@ jobs:
         run: docker compose -f containers/docker-compose.yml config --quiet
 
       - name: Lint Dockerfiles (hadolint)
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           recursive: true
           ignore: DL3008,DL3009,DL3015
